@@ -1,0 +1,35 @@
+
+:- dynamic ward_equipe/1.
+
+equipe_staff(['nurses','practitioners','resuscitators']).
+
+wardE(List) :> equipe_staff(Staff_list),make_equipe(Staff_list,List,Map),
+	       format("Mappa generata: ~w~n", [Map]),
+               write('dentro'),
+	       assertz(ward_equipe(Map)).
+
+
+make_equipe([Prof_figure|Other_figures],[Value|Other_values],[Prof_figure-Value|Other_couples]) :-
+        make_equipe(Other_figures,Other_values,Other_couples).
+
+make_equipe([],[],[]).
+
+alarmE(TP, WR, PT) :>
+	
+	ward_set,
+	def_urgency(TP, WR, PT),
+	findall(urgency(TP, WR, PT), urgency(TP, WR, PT), ListaUrgencies).
+
+
+handle_urgency(TP,WR,PT) :- urgency(TP,WR,PT), write(TP), write(' '), write(WR), write(' '), write(PT).
+ward_set :-
+    ward_equipe(_).
+
+def_urgency(TP,WR, PT) :-
+	(retract(urgency(TP,WR,PT)) -> true; true),
+	assertz(urgency(TP,WR,PT)).
+
+stampa_lista([]).
+stampa_lista([Head|Tail]) :-
+    write(Head),
+    stampa_lista(Tail).

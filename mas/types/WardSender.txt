@@ -1,0 +1,30 @@
+:- dynamic done/1.
+done(0).
+
+leggi_tutte_le_mappeI :>
+    open('reparti', read, Stream),
+    leggi_e_stampa_mappe_da_stream(Stream),
+    close(Stream),
+    set_done(1).
+
+leggi_tutte_le_mappe :-
+    done(X),
+    X == 0.
+
+
+leggi_e_stampa_mappe_da_stream(Stream) :-
+    read(Stream, Termine),
+    (   Termine == end_of_file -> 
+        true
+    ;   (   Termine = reparto(NomeReparto, Lista) ->
+            atom_concat('Coord_', NomeReparto, CoordName),
+            messageA(CoordName, send_message(ward(Lista),Me))
+        ),
+        leggi_e_stampa_mappe_da_stream(Stream)
+    ).
+
+
+set_done(Val) :-
+    retractall(done(_)),
+    assertz(done(Val)).
+

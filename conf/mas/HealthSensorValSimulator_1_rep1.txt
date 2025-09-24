@@ -1,0 +1,1 @@
+agent('work/HealthSensorValSimulator_1_rep1','HealthSensorValSimulator_1_rep1','no',italian,['conf/communication'],['/progetto/src/communication_fipa','/progetto/src/learning','/progetto/src/planasp'],'no','/progetto/src/onto/dali_onto.txt',[]).
