@@ -1,5 +1,1 @@
-reparto(ortopedia, [4, 1, 0]).
-reparto(cardiologia, [5, 2, 0]).
-reparto(pediatria, [6, 2, 0]).
-reparto(pronto_soccorso, [10, 4, 2]).
-reparto(icu, [8, 3, 3]).
+reparto(icu, [8,0, 3, 3]).
