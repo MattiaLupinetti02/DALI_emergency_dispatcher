@@ -100,6 +100,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `human_resource_request(human_res_map,From)`   | In case of insufficient specialized equipe the Ward Manager asks for some human resources from other wards |
 | `met_request`  | In emergency case ask to the HR Coordinator for the Medical Emergency Team|
 |  `emergency_handled(Ward,Patient)` | Once the emergency has been handled the Logger will be updated|
+| `taking_charge_emergency` | Stops the alert generatin while the emergency is taken in charge |
 
 
 #### HRCoordinator
