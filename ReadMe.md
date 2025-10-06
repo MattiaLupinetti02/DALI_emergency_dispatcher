@@ -206,12 +206,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `update_log_met_assignment(Ward)`   | Specify the the ward where the MET has been assigned|
 | `update_log_emergency_handled(Ward,Patient)`   | Fix an emergency as 'handled'|
 
-### 1.5 Agent Behaviors
 
-- **Sensor**: reactive; generates alarms upon detecting anomalies.
-- **Coordinator**: reactive to incoming alarms; proactive in managing the response strategy.
-- **Evacuator**: reactive to evacuation commands; can report issues or confirmation.
-- **Logger**: reactive; logs every received message or command.
 
 ## Phase 2: Design
 
