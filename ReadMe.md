@@ -1,6 +1,4 @@
-# DALI_GAIA_example
-
-Title: __Multi-Agent System for Emergency Handling and Resources Dispatching in a smart-hospital
+# Multi-Agent System for Emergency Handling and Resources Dispatching in a smart-hospital
 
 ## Objective
 Design and implement a multi-agent system in the DALI language for the detection and coordinated management of emergency as Cardiac Arrest, Respiratory Arrest, Acute Respiratory Distress, Severe Cardiovascular Instability, Systemic Disturbances, and Iatrogenic Complications.   
