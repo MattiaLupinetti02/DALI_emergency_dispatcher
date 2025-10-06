@@ -16,7 +16,85 @@ Design and implement a multi-agent system in the DALI language for the detection
 | **HRCoordinator**| Manages the Medical Emergency Team (MET) and the human resources through the wards.                           |
 | **Logger**   | Records all events, actions, and system status.           |
 
----
+1.1.1 Role Schemas
+
+- Role Schema: HealthSensor
+
+  - Description: Detects out-of-range vital parameters and alerts the WardManager.
+  
+  - Protocols and Activities: alarm, new_emergency.
+  
+  - Permissions:
+  
+    - Reads: new_systolic_pressure(Value), new_HR(Value), new_O2(Value), new_respiratory_rate(Value)
+  
+    - Generates: alarm(Ward,Patient,Values), new_emergency(Ward,Patient,Values)
+  
+  - Responsibilities:
+  
+    - Liveness: (new_vital_value → alarm → new_emergency)
+  
+    - Safety: alarms must be generated only if thresholds are exceeded.
+
+- Role Schema: WardManager
+
+  - Description: Coordinates the response within the ward, defines RRT, and interacts with HRCoordinator and Logger.
+
+  - Protocols and Activities: human_resource_request, met_request, assign_rrt, emergency_handled.
+
+  - Permissions:
+
+    - Reads: alarm(Type,Val,Patient), met_assignment
+
+    - Changes: available_staff(Ward)
+
+    - Generates: human_resource_request(human_res_map,Ward), met_request, emergency_handled(Ward,Patient)
+
+  - Responsibilities:
+
+    - Liveness: (alarm → assign_rrt → met_request → emergency_handled)
+
+    - Safety: must never assign RRT if available staff = 0.
+
+- Role Schema: HRCoordinator
+
+  - Description: Receives requests from WardManagers and assigns MET and human resources.
+  
+  - Protocols and Activities: human_resource_request, met_request, assign_human_resource, assign_met.
+  
+  - Permissions:
+  
+    - Reads: human_resource_request, met_request
+    
+    - Changes: human_resource_availability, met_status
+    
+    - Generates: met_assignment, assign_human_resource
+  
+  - Responsibilities:
+  
+    - Liveness: (human_resource_request → assign_human_resource) ∨ (met_request → assign_met)
+    
+    - Safety: avoid assigning already busy METs or unavailable staff.
+
+- Role Schema: Logger
+
+  - Description: Records all relevant events from the system and maintains their persistence.
+  
+  - Protocols and Activities: update_log_new_emergency, update_log_met_request, update_log_met_assignment, update_log_emergency_handled.
+  
+  - Permissions:
+  
+    - Reads: events received from other agents.
+    
+    - Changes: log file or database.
+    
+    - Generates: persistent log entries.
+  
+  - Responsibilities:
+  
+    - Liveness: (receive_event → update_log)
+    
+    - Safety: no duplicate log entries for the same event ID.
 
 ### 1.2 Virtual Organization
 
@@ -30,9 +108,18 @@ Design and implement a multi-agent system in the DALI language for the detection
   - `HRCoordinator → WardManager`: assign Human Resources and MET to an emergency. 
   - `All → Logger`: record of all relevant events and actions: MET assignment, Human Resources requests, emergency covering.
 
----
+### 1.3 Interaction Model (Protocol Table)
 
-### 1.3 Event Table
+| Protocol Name        | Initiator     | Responder     | Inputs               | Outputs                                      | Purpose                                                |
+| -------------------- | ------------- | ------------- | -------------------- | -------------------------------------------- | ------------------------------------------------------ |
+| `AlarmNotification`  | HealthSensor  | WardManager   | new vital values     | `alarm(Type,Val,Patient)`                    | Notify the WardManager of an abnormal vital parameter. |
+| `ResourceRequest`    | WardManager   | HRCoordinator | `human_res_map,Ward` | `assign_human_resource`                      | Request human resources from HRCoordinator.            |
+| `METRequest`         | WardManager   | HRCoordinator | emergency data       | `met_assignment`                             | Request MET assignment for a critical event.           |
+| `ResourceAssignment` | HRCoordinator | WardManager   | available resources  | `human_resource_request(human_res_map,Ward)` | Assign new human resources to the ward.                |
+| `METAssignment`      | HRCoordinator | WardManager   | MET availability     | `met_assignment`                             | Inform that MET has been assigned.                     |
+| `LogUpdate`          | All           | Logger        | any event            | log entry                                    | Update system log with relevant data.                  |
+
+### 1.4 Event Table
 
 #### HealthSensor
 
@@ -80,7 +167,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `emergency_handled(Ward,Patient)`|external|WardManager|
 
 
-### 1.4 Action Table
+### 1.5 Action Table
 
 #### HealthSensor
 
@@ -126,4 +213,64 @@ Design and implement a multi-agent system in the DALI language for the detection
 - **Evacuator**: reactive to evacuation commands; can report issues or confirmation.
 - **Logger**: reactive; logs every received message or command.
 
----
+## Phase 2: Design
+
+| Agent Type         | Composed Roles | Instances                          | Notes                                           |
+| ------------------ | -------------- | ---------------------------------- | ----------------------------------------------- |
+| `SensorAgent`      | HealthSensor   | Multiple (1 per monitored patient) | Monitors vital parameters and generates alarms. |
+| `WardAgent`        | WardManager    | One per ward                       | Coordinates local emergency management.         |
+| `CoordinatorAgent` | HRCoordinator  | Single instance                    | Central coordination of MET and HR.             |
+| `LoggerAgent`      | Logger         | Single instance                    | Central log persistence service.                |
+
+
+### 2.2 Services Model
+
+| Service                  | Agent            | Inputs              | Outputs            | Preconditions               | Postconditions         |
+| ------------------------ | ---------------- | ------------------- | ------------------ | --------------------------- | ---------------------- |
+| `alarm`                  | SensorAgent      | vital parameters    | alarm message      | abnormal parameter detected | WardManager notified   |
+| `new_emergency`          | SensorAgent      | alarm info          | log entry          | valid alarm                 | emergency logged       |
+| `set_rrt`                | WardAgent        | alarm info          | RRT assignment     | staff available             | RRT active             |
+| `human_resource_request` | WardAgent        | staff map, ward ID  | HR request         | insufficient staff          | HRCoordinator notified |
+| `met_request`            | WardAgent        | emergency data      | MET request        | emergency critical          | MET assigned           |
+| `assign_met`             | CoordinatorAgent | MET data, ward info | assignment message | MET available               | MET dispatched         |
+| `assign_human_resource`  | CoordinatorAgent | staff list          | HR assignment      | available personnel         | staff assigned         |
+| `update_log_*`           | LoggerAgent      | event data          | log record         | event valid                 | persistent log updated |
+
+### 2.3 Acquaitance Model
+
+| Source Agent  | Target Agent  | Communication Type | Purpose                             |
+| ------------- | ------------- | ------------------ | ----------------------------------- |
+| SensorAgent   | WardAgent     | Direct             | Send alarms                         |
+| WardAgent     | HRCoordinator | Direct             | Request MET or human resources      |
+| HRCoordinator | WardAgent     | Direct             | Send MET/human resource assignments |
+| All Agents    | LoggerAgent   | Broadcast          | Update event logs                   |
+
+
+#### Organizational Rules
+
+  #### Scenario Example: Cardiac Arrest 
+
+  1. HealthSensor detects abnormal HR → triggers alarm(WardA, PatientX, Values).
+
+  2. WardManager receives the alarm and performs set_rrt.
+
+  3. If staff is insufficient, WardManager performs human_resource_request(human_res_map,WardA).
+
+  4. If the emergency is critical, WardManager also sends met_request.
+
+  5. HRCoordinator receives the met_request, performs assign_met, and notifies WardManager.
+
+  6. All actions and assignments are sent to Logger using update_log_* actions.
+
+  7. When the emergency is resolved, WardManager executes emergency_handled(WardA,PatientX) and notifies Logger.
+
+#### Trheshold Parameters
+
+
+| Parameter         | Low Threshold | High Threshold |
+| ----------------- | ------------- | -------------- |
+| Systolic Pressure | < 90 mmHg     | > 180 mmHg     |
+| Heart Rate        | < 40 bpm      | > 130 bpm      |
+| O₂ Saturation     | < 90%         | —              |
+| Respiratory Rate  | < 8 bpm       | > 30 bpm       |
+
