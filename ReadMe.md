@@ -18,89 +18,110 @@ Design and implement a multi-agent system in the DALI language for the detection
 
 ### 1.1.1 Role Schemas
 
-- **Role Schema: HealthSensor**
+---
 
-  - **Description:** Detects out-of-range vital parameters (e.g., systolic pressure, heart rate, oxygen saturation, respiratory rate) and alerts the corresponding WardManager about the detected anomaly.
-  
-  - **Protocols and Activities:** `alarm`, `new_emergency`, `taking_charge_emergency`.
-  
-  - **Permissions:**
-  
-    - **Reads:** `new_systolic_pressure(Value)`, `new_HR(Value)`, `new_O2(Value)`, `new_respiratory_rate(Value)`
-  
-    - **Generates:** `alarm(Ward,Patient,Values)`, `new_emergency(Ward,Patient,Values)`
-  
-  - **Responsibilities:**
-  
-    - **Liveness:** `(new_vital_value → alarm(Ward,Patient,Values) → new_emergency(Ward,Patient,Values))`
-  
-    - **Safety:** alarms must be generated only if thresholds are exceeded; avoid repeated alarms for the same condition until `taking_charge_emergency` occurs.
+#### **Role Schema: HealthSensor**
+
+- **Description:**  
+  Detects out-of-range vital parameters (e.g., systolic pressure, heart rate, oxygen saturation, respiratory rate) from the monitored patient.  
+  When an anomaly is detected, it triggers an alarm to the WardManager and updates the Logger about the new emergency.  
+  Once the WardManager takes charge of the event, the HealthSensor stops generating repeated alarms.
+
+- **Protocols and Activities:**  
+  `alarm`, `new_emergency`, `taking_charge_emergency`.
+
+- **Permissions:**
+  - **Reads:** `new_systolic_pressure(Value)`, `new_HR(Value)`, `new_O2(Value)`, `new_respiratory_rate(Value)`
+  - **Generates:** `alarm(Ward,Patient,Values)`, `new_emergency(Ward,Patient,Values)`
+
+- **Responsibilities:**
+  - **Liveness:**  
+    `(new_vital_value → alarm(Ward,Patient,Values) → new_emergency(Ward,Patient,Values))`
+  - **Safety:**  
+    Alarms must be generated only if threshold limits are exceeded.  
+    Avoid redundant alarms until `taking_charge_emergency` is received from the WardManager.
 
 ---
 
-- **Role Schema: WardManager**
+#### **Role Schema: WardManager**
 
-  - **Description:** Coordinates the emergency management within the ward, defines the Rapid Rescue Team (RRT), handles alarms from HealthSensors, and interacts with the HRCoordinator to request or lend human resources and to request the MET when needed.
-  
-  - **Protocols and Activities:** `set_rrt`, `deacrease_available_equipe`, `increase_available_equipe`, `human_resource_request`, `human_resource_lending`, `met_request`, `emergency_handled`, `taking_charge_emergency`.
-  
-  - **Permissions:**
-  
-    - **Reads:** `alarm(Type,Val,Patient)`, `human_resource_reply(human_res_map,Ward)`, `met_assignment`
-  
-    - **Changes:** `available_equipe(Ward)`
-  
-    - **Generates:** `human_resource_request(human_res_map,Ward)`, `human_resource_lending(human_res_map,From)`, `met_request`, `emergency_handled(Ward,Patient)`
-  
-  - **Responsibilities:**
-  
-    - **Liveness:** `(alarm → set_rrt → (human_resource_request ∨ human_resource_lending ∨ met_request) → taking_charge_emergency → emergency_handled(Ward,Patient))`
-  
-    - **Safety:** must never execute `set_rrt` if available equipe = 0; all alarms must trigger an action within a defined time window.
+- **Description:**  
+  Coordinates emergency handling within the ward.  
+  Receives alarms from HealthSensor agents, defines the Rapid Rescue Team (RRT), updates local equipe availability, and interacts with the HRCoordinator to request or lend human resources or to obtain the Medical Emergency Team (MET).  
+  It ensures that emergencies are promptly taken in charge and properly logged once resolved.
 
----
+- **Protocols and Activities:**  
+  `set_rrt`, `deacrease_available_equipe`, `increase_available_equipe`,  
+  `human_resource_request`, `human_resource_lending`,  
+  `met_request`, `emergency_handled`, `taking_charge_emergency`.
 
-- **Role Schema: HRCoordinator**
+- **Permissions:**
+  - **Reads:** `alarm(Type,Val,Patient)`, `human_resource_reply(human_res_map,Ward)`, `met_assignment`
+  - **Changes:** `available_equipe(Ward)`
+  - **Generates:** `human_resource_request(human_res_map,Ward)`, `human_resource_lending(human_res_map,From)`,  
+    `met_request`, `emergency_handled(Ward,Patient)`
 
-  - **Description:** Central coordinator that manages hospital-wide human resources and the Medical Emergency Team (MET); handles requests from WardManagers and assigns personnel or MET accordingly.
-  
-  - **Protocols and Activities:** `human_resource_request`, `human_resource_reply`, `human_resource_lending`, `assign_human_resource`, `met_request`, `assign_met`, `met_assignment`.
-  
-  - **Permissions:**
-  
-    - **Reads:** `human_resource_request(human_res_map,From)`, `met_request`, `emergency_handled(Ward,Patient)`
-    
-    - **Changes:** `human_resource_availability`, `met_status`
-    
-    - **Generates:** `human_resource_reply(human_res_map,From)`, `met_assignment(Ward)`, `assign_met`, `assign_human_resource`
-  
-  - **Responsibilities:**
-  
-    - **Liveness:** `(human_resource_request → human_resource_reply) ∨ (met_request → assign_met → met_assignment(Ward))`
-    
-    - **Safety:** avoid assigning unavailable or already active METs; ensure consistency between human resource lending and availability across wards.
+- **Responsibilities:**
+  - **Liveness:**  
+    `(alarm → set_rrt → (human_resource_request ∨ human_resource_lending ∨ met_request) → taking_charge_emergency → emergency_handled(Ward,Patient))`
+  - **Safety:**  
+    Must never execute `set_rrt` if `available_equipe(Ward) = 0`.  
+    All alarms must trigger a response action within a defined time frame.  
+    Ensure that all HR and MET requests are logged via Logger.
 
 ---
 
-- **Role Schema: Logger**
+#### **Role Schema: HRCoordinator**
 
-  - **Description:** Centralized agent responsible for recording all relevant system events, actions, and assignments from all other agents; maintains persistence of the log for auditing and traceability.
-  
-  - **Protocols and Activities:** `update_log_new_emergency`, `update_log_met_request`, `update_log_met_assignment`, `update_log_emergency_handled`.
-  
-  - **Permissions:**
-  
-    - **Reads:** incoming event notifications from `HealthSensor`, `WardManager`, and `HRCoordinator`.
-    
-    - **Changes:** internal log file or database.
-    
-    - **Generates:** persistent log entries for each received event.
-  
-  - **Responsibilities:**
-  
-    - **Liveness:** `(receive_event → update_log_new_emergency → update_log_met_request → update_log_met_assignment → update_log_emergency_handled)`
-    
-    - **Safety:** guarantee one log entry per unique event; ensure persistence even under communication failures (buffer until write confirmed).
+- **Description:**  
+  Central coordinating agent that manages hospital-wide human resources and the Medical Emergency Team (MET).  
+  Receives `human_resource_request` or `met_request` messages from WardManagers, checks availability, and performs either `assign_human_resource` or `assign_met`.  
+  Updates the Logger with each assignment to ensure full traceability.
+
+- **Protocols and Activities:**  
+  `human_resource_request`, `human_resource_reply`, `human_resource_lending`,  
+  `assign_human_resource`, `met_request`, `assign_met`, `met_assignment`.
+
+- **Permissions:**
+  - **Reads:** `human_resource_request(human_res_map,From)`, `met_request`, `emergency_handled(Ward,Patient)`
+  - **Changes:** `human_resource_availability`, `met_status`
+  - **Generates:** `human_resource_reply(human_res_map,From)`, `met_assignment(Ward)`,  
+    `assign_met`, `assign_human_resource`
+
+- **Responsibilities:**
+  - **Liveness:**  
+    `(human_resource_request → human_resource_reply) ∨ (met_request → assign_met → met_assignment(Ward))`
+  - **Safety:**  
+    Must avoid assigning already engaged METs or unavailable personnel.  
+    Guarantee coherence between `human_resource_lending` and global staff availability across wards.  
+    Ensure all MET and HR dispatches are reported to the Logger.
+
+---
+
+#### **Role Schema: Logger**
+
+- **Description:**  
+  Centralized logging agent responsible for recording every relevant event, action, and assignment within the system.  
+  Maintains persistence of logs for traceability, analytics, and post-event auditing.  
+  Receives updates from all other agents and stores them in a structured format.
+
+- **Protocols and Activities:**  
+  `update_log_new_emergency`, `update_log_met_request`, `update_log_met_assignment`, `update_log_emergency_handled`.
+
+- **Permissions:**
+  - **Reads:** incoming event notifications from `HealthSensor`, `WardManager`, and `HRCoordinator`
+  - **Changes:** internal log file or database
+  - **Generates:** persistent and timestamped log entries for each received event
+
+- **Responsibilities:**
+  - **Liveness:**  
+    `(receive_event → update_log_new_emergency → update_log_met_request → update_log_met_assignment → update_log_emergency_handled)`
+  - **Safety:**  
+    Guarantee one log entry per unique event ID.  
+    Ensure data persistence and recovery under network or system failures.  
+    Maintain temporal order of logged events for accurate reconstruction.
+
+---
 
 ### 1.2 Virtual Organization
 
