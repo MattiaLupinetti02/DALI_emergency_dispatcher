@@ -113,8 +113,8 @@ Design and implement a multi-agent system in the DALI language for the detection
 | Protocol Name        | Initiator     | Responder     | Inputs               | Outputs                                      | Purpose                                                |
 | -------------------- | ------------- | ------------- | -------------------- | -------------------------------------------- | ------------------------------------------------------ |
 | `AlarmNotification`  | HealthSensor  | WardManager   | new vital values     | `alarm(Type,Val,Patient)`                    | Notify the WardManager of an abnormal vital parameter. |
-| `ResourceRequest`    | WardManager   | HRCoordinator | `human_res_map,Ward` | `assign_human_resource`                      | Request human resources from HRCoordinator.            |
-| `METRequest`         | WardManager   | HRCoordinator | emergency data       | `met_assignment`                             | Request MET assignment for a critical event.           |
+| `ResourceRequest`    | WardManager   | HRCoordinator | `human_resource_request(human_res_map,Ward)` | `human_resource_reply(human_res_map,From)`                      | Request human resources from HRCoordinator.            |
+| `METRequest`         | WardManager   | HRCoordinator | emergency data       | `met_request`                             | Request MET assignment for a critical event.           |
 | `ResourceAssignment` | HRCoordinator | WardManager   | available resources  | `human_resource_reply(human_res_map,Ward)` | Assign new human resources to the ward.                |
 | `METAssignment`      | HRCoordinator | WardManager   | MET availability     | `met_assignment`                             | Inform that MET has been assigned.                     |
 | `LogUpdate`          | All           | Logger        | any event            | log entry                                    | Update system log with relevant data.                  |
