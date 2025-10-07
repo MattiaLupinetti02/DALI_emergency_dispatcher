@@ -12,7 +12,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | Role         | Main Responsibilities                                     |
 |--------------|-----------------------------------------------------------|
 | **HealthSensor**   | Detects out of range vital parameters.    |
-| **WardManager** | Manages the internal equipe defining the Rapid Rescue Team (RRT) and alerts the . |
+| **WardManager** | Manages the internal equipe defining the Rapid Rescue Team (RRT) and alerts the HRCoordinator in order to achieve the Medical Emergency Team(MET). |
 | **HRCoordinator**| Manages the Medical Emergency Team (MET) and the human resources through the wards.                           |
 | **Logger**   | Records all events, actions, and system status.           |
 
