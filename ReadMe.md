@@ -183,8 +183,8 @@ Design and implement a multi-agent system in the DALI language for the detection
 | Action                      | Description                                 |
 |-----------------------------|---------------------------------------------|
 | `set_rrt`   | Define the rapid rescue team (RRT) in orider to handle the emergency aid  |
-| `deacrease_available_equipe`   | After the RRT setting inside or outside the Ward decrease the available staff|
-| `increase_available_equipe`   | After the RRT setting inside or outside the Ward decrease the available staff|
+| `deacrease_available_equipe(human_resources_map)`   | After the RRT setting inside or outside the Ward decrease the available staff|
+| `increase_available_equipe(human_resources_map)`   | After the RRT setting inside or outside the Ward decrease the available staff|
 | `human_resource_request(human_res_map,From)`   | In case of insufficient specialized equipe the Ward Manager asks for some human resources from other wards |
 | `human_resource_lending(human_res_map,From)`   | In case of insufficient specialized equipe inside other wards the Ward Manager lends  some human resources |
 | `met_request`  | In emergency case ask to the HR Coordinator for the Medical Emergency Team|
