@@ -16,85 +16,91 @@ Design and implement a multi-agent system in the DALI language for the detection
 | **HRCoordinator**| Manages the Medical Emergency Team (MET) and the human resources through the wards.                           |
 | **Logger**   | Records all events, actions, and system status.           |
 
-1.1.1 Role Schemas
+### 1.1.1 Role Schemas
 
-- Role Schema: HealthSensor
+- **Role Schema: HealthSensor**
 
-  - Description: Detects out-of-range vital parameters and alerts the WardManager.
+  - **Description:** Detects out-of-range vital parameters (e.g., systolic pressure, heart rate, oxygen saturation, respiratory rate) and alerts the corresponding WardManager about the detected anomaly.
   
-  - Protocols and Activities: alarm, new_emergency.
+  - **Protocols and Activities:** `alarm`, `new_emergency`, `taking_charge_emergency`.
   
-  - Permissions:
+  - **Permissions:**
   
-    - Reads: new_systolic_pressure(Value), new_HR(Value), new_O2(Value), new_respiratory_rate(Value)
+    - **Reads:** `new_systolic_pressure(Value)`, `new_HR(Value)`, `new_O2(Value)`, `new_respiratory_rate(Value)`
   
-    - Generates: alarm(Ward,Patient,Values), new_emergency(Ward,Patient,Values)
+    - **Generates:** `alarm(Ward,Patient,Values)`, `new_emergency(Ward,Patient,Values)`
   
-  - Responsibilities:
+  - **Responsibilities:**
   
-    - Liveness: (new_vital_value → alarm → new_emergency)
+    - **Liveness:** `(new_vital_value → alarm(Ward,Patient,Values) → new_emergency(Ward,Patient,Values))`
   
-    - Safety: alarms must be generated only if thresholds are exceeded.
+    - **Safety:** alarms must be generated only if thresholds are exceeded; avoid repeated alarms for the same condition until `taking_charge_emergency` occurs.
 
-- Role Schema: WardManager
+---
 
-  - Description: Coordinates the response within the ward, defines RRT, and interacts with HRCoordinator and Logger.
+- **Role Schema: WardManager**
 
-  - Protocols and Activities: human_resource_request, met_request, assign_rrt, emergency_handled.
-
-  - Permissions:
-
-    - Reads: alarm(Type,Val,Patient), met_assignment
-
-    - Changes: available_staff(Ward)
-
-    - Generates: human_resource_request(human_res_map,Ward), met_request, emergency_handled(Ward,Patient)
-
-  - Responsibilities:
-
-    - Liveness: (alarm → assign_rrt → met_request → emergency_handled)
-
-    - Safety: must never assign RRT if available staff = 0.
-
-- Role Schema: HRCoordinator
-
-  - Description: Receives requests from WardManagers and assigns MET and human resources.
+  - **Description:** Coordinates the emergency management within the ward, defines the Rapid Rescue Team (RRT), handles alarms from HealthSensors, and interacts with the HRCoordinator to request or lend human resources and to request the MET when needed.
   
-  - Protocols and Activities: human_resource_request, met_request, assign_human_resource, assign_met.
+  - **Protocols and Activities:** `set_rrt`, `deacrease_available_equipe`, `increase_available_equipe`, `human_resource_request`, `human_resource_lending`, `met_request`, `emergency_handled`, `taking_charge_emergency`.
   
-  - Permissions:
+  - **Permissions:**
   
-    - Reads: human_resource_request, met_request
+    - **Reads:** `alarm(Type,Val,Patient)`, `human_resource_reply(human_res_map,Ward)`, `met_assignment`
+  
+    - **Changes:** `available_equipe(Ward)`
+  
+    - **Generates:** `human_resource_request(human_res_map,Ward)`, `human_resource_lending(human_res_map,From)`, `met_request`, `emergency_handled(Ward,Patient)`
+  
+  - **Responsibilities:**
+  
+    - **Liveness:** `(alarm → set_rrt → (human_resource_request ∨ human_resource_lending ∨ met_request) → taking_charge_emergency → emergency_handled(Ward,Patient))`
+  
+    - **Safety:** must never execute `set_rrt` if available equipe = 0; all alarms must trigger an action within a defined time window.
+
+---
+
+- **Role Schema: HRCoordinator**
+
+  - **Description:** Central coordinator that manages hospital-wide human resources and the Medical Emergency Team (MET); handles requests from WardManagers and assigns personnel or MET accordingly.
+  
+  - **Protocols and Activities:** `human_resource_request`, `human_resource_reply`, `human_resource_lending`, `assign_human_resource`, `met_request`, `assign_met`, `met_assignment`.
+  
+  - **Permissions:**
+  
+    - **Reads:** `human_resource_request(human_res_map,From)`, `met_request`, `emergency_handled(Ward,Patient)`
     
-    - Changes: human_resource_availability, met_status
+    - **Changes:** `human_resource_availability`, `met_status`
     
-    - Generates: met_assignment, assign_human_resource
+    - **Generates:** `human_resource_reply(human_res_map,From)`, `met_assignment(Ward)`, `assign_met`, `assign_human_resource`
   
-  - Responsibilities:
+  - **Responsibilities:**
   
-    - Liveness: (human_resource_request → assign_human_resource) ∨ (met_request → assign_met)
+    - **Liveness:** `(human_resource_request → human_resource_reply) ∨ (met_request → assign_met → met_assignment(Ward))`
     
-    - Safety: avoid assigning already busy METs or unavailable staff.
+    - **Safety:** avoid assigning unavailable or already active METs; ensure consistency between human resource lending and availability across wards.
 
-- Role Schema: Logger
+---
 
-  - Description: Records all relevant events from the system and maintains their persistence.
+- **Role Schema: Logger**
+
+  - **Description:** Centralized agent responsible for recording all relevant system events, actions, and assignments from all other agents; maintains persistence of the log for auditing and traceability.
   
-  - Protocols and Activities: update_log_new_emergency, update_log_met_request, update_log_met_assignment, update_log_emergency_handled.
+  - **Protocols and Activities:** `update_log_new_emergency`, `update_log_met_request`, `update_log_met_assignment`, `update_log_emergency_handled`.
   
-  - Permissions:
+  - **Permissions:**
   
-    - Reads: events received from other agents.
+    - **Reads:** incoming event notifications from `HealthSensor`, `WardManager`, and `HRCoordinator`.
     
-    - Changes: log file or database.
+    - **Changes:** internal log file or database.
     
-    - Generates: persistent log entries.
+    - **Generates:** persistent log entries for each received event.
   
-  - Responsibilities:
+  - **Responsibilities:**
   
-    - Liveness: (receive_event → update_log)
+    - **Liveness:** `(receive_event → update_log_new_emergency → update_log_met_request → update_log_met_assignment → update_log_emergency_handled)`
     
-    - Safety: no duplicate log entries for the same event ID.
+    - **Safety:** guarantee one log entry per unique event; ensure persistence even under communication failures (buffer until write confirmed).
 
 ### 1.2 Virtual Organization
 
@@ -233,7 +239,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `human_resource_request` | WardAgent        | needed staff map, ward ID  | HR request         | insufficient staff          | HRCoordinator notified |
 | `met_request`            | WardAgent        | emergency data      | MET request        | emergency critical          | MET assigned           |
 | `assign_met`             | CoordinatorAgent | MET data, ward info | assignment message | MET available               | MET dispatched         |
-| `assign_human_resource`  | CoordinatorAgent | staff list          | HR assignment      | available personnel         | staff assigned         |
+| `assign_human_resource`  | CoordinatorAgent | staff map          | HR assignment      | available personnel         | staff assigned         |
 | `update_log_*`           | LoggerAgent      | event data          | log record         | event valid                 | persistent log updated |
 
 ### 2.3 Acquaitance Model
