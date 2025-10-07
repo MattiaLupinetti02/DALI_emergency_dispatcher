@@ -192,7 +192,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 
 | Action                      | Description                                 |
 |-----------------------------|---------------------------------------------|
-| `human_resource_request(human_res_map,From)`   | Guides people to exit `X` safely  |
+| `human_resource_request(human_res_map,From)`   | Forwards to other WardManager the  Human Resource Request of the needy ward |
 | `met_assignment`   | Notify to the needy ward the MET assignment  |
 | `met_assignment(Ward)`| Notifies the Logger that the MET has been assigned|
 
