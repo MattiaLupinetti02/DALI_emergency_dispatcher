@@ -115,7 +115,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `AlarmNotification`  | HealthSensor  | WardManager   | new vital values     | `alarm(Type,Val,Patient)`                    | Notify the WardManager of an abnormal vital parameter. |
 | `ResourceRequest`    | WardManager   | HRCoordinator | `human_res_map,Ward` | `assign_human_resource`                      | Request human resources from HRCoordinator.            |
 | `METRequest`         | WardManager   | HRCoordinator | emergency data       | `met_assignment`                             | Request MET assignment for a critical event.           |
-| `ResourceAssignment` | HRCoordinator | WardManager   | available resources  | `human_resource_request(human_res_map,Ward)` | Assign new human resources to the ward.                |
+| `ResourceAssignment` | HRCoordinator | WardManager   | available resources  | `human_resource_reply(human_res_map,Ward)` | Assign new human resources to the ward.                |
 | `METAssignment`      | HRCoordinator | WardManager   | MET availability     | `met_assignment`                             | Inform that MET has been assigned.                     |
 | `LogUpdate`          | All           | Logger        | any event            | log entry                                    | Update system log with relevant data.                  |
 
@@ -142,6 +142,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `alarm(high_HR,Val,Patient)`   | external | HealthSensor      |
 | `alarm(low_respiratory_rate,Val,Patient)`   | external | HealthSensor      |
 | `alarm(high_respiratory_rate,Val,Patient)`   | external | HealthSensor      |
+| `human_resource_reply(human_res_map,Ward)`   | external | HRCoordinator      |
 | `human_resource_request(human_res_map,Ward)`   | external | HRCoordinator      |
 | `assign_rrt`  |internal  |WardManager  |
 | `met_assignment`   | external | HRCoordinator       |
@@ -152,6 +153,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | Event                | Type     | Source |
 |----------------------|----------|-------------|
 | `human_resource_request(human_res_map,From)`|external  |WardManager  |
+| `human_resource_lending(human_res_map,From)`|external  |WardManager  |
 | `met_request`|external  |WardManager  |
 | `assign_met`|internal  |HRCoordinator  |
 | `assign_human_resource`|internal  |HRCoordinator  |
@@ -175,6 +177,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 |-----------------------------|---------------------------------------------|
 | `alarm(Ward,Patient,Values)`   |Alerts the equipe of the ward about the new emergency|            |
 | `new_emergency(Ward,Patient,Values)` | After the detection of a new emergency the Logger will be updated  |
+
 #### WardManager
 
 | Action                      | Description                                 |
@@ -183,8 +186,9 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `deacrease_available_equipe`   | After the RRT setting inside or outside the Ward decrease the available staff|
 | `increase_available_equipe`   | After the RRT setting inside or outside the Ward decrease the available staff|
 | `human_resource_request(human_res_map,From)`   | In case of insufficient specialized equipe the Ward Manager asks for some human resources from other wards |
+| `human_resource_lending(human_res_map,From)`   | In case of insufficient specialized equipe inside other wards the Ward Manager lends  some human resources |
 | `met_request`  | In emergency case ask to the HR Coordinator for the Medical Emergency Team|
-|  `emergency_handled(Ward,Patient)` | Once the emergency has been handled the Logger will be updated|
+| `emergency_handled(Ward,Patient)` | Once the emergency has been handled the Logger will be updated|
 | `taking_charge_emergency` | Stops the alert generatin while the emergency is taken in charge |
 
 
@@ -192,6 +196,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 
 | Action                      | Description                                 |
 |-----------------------------|---------------------------------------------|
+| `human_resource_reply(human_res_map,From)`   | Replies to the  Human Resource Request of the needy ward |
 | `human_resource_request(human_res_map,From)`   | Forwards to other WardManager the  Human Resource Request of the needy ward |
 | `met_assignment`   | Notify to the needy ward the MET assignment  |
 | `met_assignment(Ward)`| Notifies the Logger that the MET has been assigned|
@@ -225,7 +230,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `alarm`                  | SensorAgent      | vital parameters    | alarm message      | abnormal parameter detected | WardManager notified   |
 | `new_emergency`          | SensorAgent      | alarm info          | log entry          | valid alarm                 | emergency logged       |
 | `set_rrt`                | WardAgent        | alarm info          | RRT assignment     | staff available             | RRT active             |
-| `human_resource_request` | WardAgent        | staff map, ward ID  | HR request         | insufficient staff          | HRCoordinator notified |
+| `human_resource_request` | WardAgent        | needed staff map, ward ID  | HR request         | insufficient staff          | HRCoordinator notified |
 | `met_request`            | WardAgent        | emergency data      | MET request        | emergency critical          | MET assigned           |
 | `assign_met`             | CoordinatorAgent | MET data, ward info | assignment message | MET available               | MET dispatched         |
 | `assign_human_resource`  | CoordinatorAgent | staff list          | HR assignment      | available personnel         | staff assigned         |
@@ -238,7 +243,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | SensorAgent   | WardAgent     | Direct             | Send alarms                         |
 | WardAgent     | HRCoordinator | Direct             | Request MET or human resources      |
 | HRCoordinator | WardAgent     | Direct             | Send MET/human resource assignments |
-| All Agents    | LoggerAgent   | Broadcast          | Update event logs                   |
+| All Agents    | LoggerAgent   | Direct          | Update event logs                   |
 
 
 #### Organizational Rules
