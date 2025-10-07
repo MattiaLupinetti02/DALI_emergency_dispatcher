@@ -63,7 +63,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 
 - **Responsibilities:**
   - **Liveness:**  
-    `(alarm → set_rrt → (human_resource_request ) → taking_charge_emergency → emergency_handled(Ward,Patient))`
+    `(alarm  → set_rrt → taking_charge_emergency → emergency_handled(Ward,Patient))`
   - **Safety:**  
     Must never execute `set_rrt` if `available_equipe(Ward) = ∅`.  
     All alarms must trigger a response action within a defined time frame.  
