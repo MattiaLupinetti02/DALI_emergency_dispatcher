@@ -13,17 +13,18 @@ sequenceDiagram
     HealthSensor->>Logger: new_emergency(WardA, PatientX, Values)
     Logger-->>HealthSensor: acknowledgment
 
-    %% PHASE 2 - Local Response
-    WardManager->>WardManager: set_rrt
-    WardManager->>WardManager: deacrease_available_equipe(human_resources_map)
-    Note right of WardManager: Defines RRT and updates local equipe status
-
-    %% PHASE 3 - Resource Assessment
+    %% PHASE 2 - Resource Assessment
     alt insufficient staff
         WardManager->>HRCoordinator: human_resource_request(human_res_map, WardA)
         HRCoordinator-->>WardManager: human_resource_reply(human_res_map, WardA)
         WardManager->>WardManager: increase_available_equipe(human_resources_map)
     end
+
+    
+    %% PHASE 3 - Local Response
+    WardManager->>WardManager: set_rrt
+    WardManager->>WardManager: deacrease_available_equipe(human_resources_map)
+    Note right of WardManager: Defines RRT and updates local equipe status
 
     %% PHASE 4 - Critical Emergency → MET Request
     alt critical emergency
