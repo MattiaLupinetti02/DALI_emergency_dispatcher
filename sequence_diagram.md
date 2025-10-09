@@ -24,7 +24,7 @@ sequenceDiagram
     %% PHASE 3 - Local Response
     WardManager->>WardManager: set_rrt
     WardManager->>WardManager: deacrease_available_equipe(human_resources_map)
-    Note right of WardManager: Defines RRT and updates local equipe status
+    Note right of WardManager: Defines RRT and updates available equipe status
 
     %% PHASE 5 - Emergency Taken in Charge
     WardManager->>HealthSensor: taking_charge_emergency
