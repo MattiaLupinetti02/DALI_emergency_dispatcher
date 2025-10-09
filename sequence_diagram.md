@@ -3,6 +3,7 @@ sequenceDiagram
     autonumber
     participant HealthSensor
     participant WardManager
+    partecipant WardManager_lender
     participant HRCoordinator
     participant Logger
 
@@ -16,7 +17,9 @@ sequenceDiagram
     %% PHASE 2 - Resource Assessment
     alt insufficient staff
         WardManager->>HRCoordinator: human_resource_request(human_res_map, WardA)
-        HRCoordinator-->>WardManager: human_resource_reply(human_res_map, WardA)
+        HRCoordinator-->>WardManager_lender : human_resource_request(human_res_map, WardA)
+        WardManager_lender -> HRCoordinator : human_resource_lending(human_res_map, WardA)
+        HRCoordinator -> WardManager : human_resource_reply(human_res_map, WardA)
         WardManager->>WardManager: increase_available_equipe(human_resources_map)
     end
 
@@ -46,10 +49,10 @@ sequenceDiagram
     WardManager->>Logger: update_log_emergency_handled(WardA, PatientX)
 
     alt insufficient staff
-        WardManager->>HRCoordinator: human_resource_lending(human_res_map, WardA)
+        WardManager->>HRCoordinator: human_resource_restitution(Ward,human_res_map)
         WardManager->>WardManager: deacrease_available_equipe(human_resources_map)
-        HRCoordinator-->>WardManager: human_resource_lending(human_res_map, WardA)
-        WardManager->>WardManager: increase_available_equipe(human_resources_map)
+        HRCoordinator-->>WardManager_lender: human_resource_restitution(Ward,human_res_map)
+        WardManager_lender->>WardManager_lender: increase_available_equipe(human_resources_map)
     end
 
     %% PHASE 7 - Finalization
