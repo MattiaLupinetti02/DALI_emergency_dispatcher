@@ -41,7 +41,7 @@ classDiagram
         -event_log
     }
 
-    SensorAgent --> WardAgent : alarm / new_emergency
+    SensorAgent --> WardAgent : alarm 
     WardAgent --> CoordinatorAgent : human_resource_request / met_request
     CoordinatorAgent --> WardAgent : met_assignment / human_resource_reply
     SensorAgent --> LoggerAgent : new_emergency
