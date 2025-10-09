@@ -29,7 +29,6 @@ classDiagram
         +met_assignment(Ward)
         +assign_met()
         +assign_human_resource()
-        -human_resource_availability
         -met_status
     }
 
