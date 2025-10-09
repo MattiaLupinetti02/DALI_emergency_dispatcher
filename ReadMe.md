@@ -254,10 +254,10 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `alarm`                  | SensorAgent      | vital parameters    | alarm message      | abnormal value detected | WardManager notified   |
 | `new_emergency`          | SensorAgent      | alarm info          | log entry          | valid alarm                 | emergency logged       |
 | `set_rrt`                | WardAgent        | alarm info          | RRT assignment     | staff available             | RRT active             |
-| `human_resource_request` | WardAgent        | needed staff map, ward ID  | HR request         | insufficient staff          | HRCoordinator notified |
+| `human_resource_request` | WardAgent        | needed staff map, ward ID  | HR request         | insufficient staff          | HRCoordinator notified, message forwarded to other Wards |
 | `human_resource_restitution` | WardAgent | Needed staff map, lender ward ID| Lender ward staff increasing | emergency_handled or met_assignment| Ward equipe descreases and the lender ward increase its equipe|
-| `met_request`            | WardAgent        | emergency data      | MET request        | emergency critical          | MET assigned           |
-| `met_assignment`             | CoordinatorAgent | MET data, ward info | assignment message | MET available               | MET dispatched         |
+| `met_request`            | WardAgent        | ---    | MET request        | emergency critical          | MET assigned           |
+| `met_assignment`             | CoordinatorAgent |  ward info | assignment message | MET available               | MET dispatched         |
 | `assign_human_resource`  | CoordinatorAgent | staff map          | HR assignment      | available personnel         | staff assigned         |
 | `update_log_*`           | LoggerAgent      | event data          | log record         | event valid                 | persistent log updated |
 
