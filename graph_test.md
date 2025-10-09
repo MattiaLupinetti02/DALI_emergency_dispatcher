@@ -1,9 +1,6 @@
 ```mermaid
 
 
-%%-------------------------------------------------------------
-%% GAIA Role Schemas (corrected version)
-%%-------------------------------------------------------------
 graph TD
     %%=== Agents / Roles ===
     HS[HealthSensor]
@@ -12,7 +9,6 @@ graph TD
     HRC[HRCoordinator]
     LOG[Logger]
 
-    %%=== HealthSensor Role ===
     subgraph Role_HealthSensor [HealthSensor Role Schema]
         HS_DESC["Detects abnormal vital parameters and triggers alarm(Ward,Patient,Values)"]
         HS -->|alarm(Ward,Patient,Values)| WM1
@@ -20,7 +16,6 @@ graph TD
         WM1 -->|taking_charge_emergency| HS
     end
 
-    %%=== WardManager Role ===
     subgraph Role_WardManager [WardManager Role Schema]
         WM_DESC["Handles alarms, sets RRT, manages equipe, requests HR or MET via HRCoordinator"]
         WM1 -->|human_resource_request(human_res_map,WardA)| HRC
@@ -33,7 +28,6 @@ graph TD
         WM1 -->|human_resource_restitution(WardB,human_res_map)| HRC
     end
 
-    %%=== HRCoordinator Role ===
     subgraph Role_HRCoordinator [HRCoordinator Role Schema]
         HRC_DESC["Broker for HR exchange and MET dispatcher. No own resources."]
         HRC -->|forward human_resource_request| WM2
@@ -43,7 +37,6 @@ graph TD
         HRC -->|update_log_met_assignment| LOG
     end
 
-    %%=== Logger Role ===
     subgraph Role_Logger [Logger Role Schema]
         LOG_DESC["Stores persistent timestamped logs for all events"]
         HS -->|new_emergency| LOG
