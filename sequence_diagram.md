@@ -3,7 +3,7 @@ sequenceDiagram
     autonumber
     participant HealthSensor
     participant WardManager
-    partecipant WardManagerLender
+    participant WardManagerLender
     participant HRCoordinator
     participant Logger
 
