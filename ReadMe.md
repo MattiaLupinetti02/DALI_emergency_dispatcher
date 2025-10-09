@@ -36,7 +36,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 
 - **Responsibilities:**
   - **Liveness:**  
-    `(new_vital_value → alarm(Ward,Patient,Values) → new_emergency(Ward,Patient,Values))`
+    `(new_*(Value) → alarm(Ward,Patient,Values) → new_emergency(Ward,Patient,Values))`
   - **Safety:**  
     Alarms must be generated only if threshold limits are exceeded.  
     Avoid redundant alarms until `taking_charge_emergency` is received from the WardManager.
@@ -75,7 +75,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 
 - **Description:**  
   Central coordinating agent that manages hospital-wide human resources and the Medical Emergency Team (MET).  
-  Receives `human_resource_request` or `met_request` messages from WardManagers, checks availability, and performs either `assign_human_resource` or `assign_met`.  
+  Receives `human_resource_request(human_res_map,From)` ,`human_resource_restitution(Ward,human_res_map)`, `emergency_handled(Ward,Patient)` or `met_request` messages from WardManagers, checks availability, and performs either `assign_human_resource`, forwards ,`human_resource_restitution(Ward,human_res_map)` to the lender ward and/or `assign_met`.  
   Updates the Logger with each assignment to ensure full traceability.
 
 - **Protocols and Activities:**  
@@ -86,7 +86,7 @@ Design and implement a multi-agent system in the DALI language for the detection
   - **Reads:** `human_resource_request(human_res_map,From)`, `met_request`, `emergency_handled(Ward,Patient)`, `human_resource_restitution(Ward,human_res_map)`
   - **Changes:** `met_status`
   - **Generates:** `human_resource_reply(human_res_map,From)`, `met_assignment(Ward)`,  
-    `assign_met`, `assign_human_resource`, `human_resource_restitution(Ward,human_res_map)`
+    `assign_met`, `human_resource_restitution(Ward,human_res_map)`
 
 - **Responsibilities:**
   - **Liveness:**  
@@ -222,6 +222,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 |-----------------------------|---------------------------------------------|
 | `human_resource_reply(human_res_map,From)`   | Replies to the  Human Resource Request of the needy ward |
 | `human_resource_request(human_res_map,From)`   | Forwards to other WardManager the  Human Resource Request of the needy ward |
+| `human_resourcerestitution(human_res_map,Ward)`   | Forwards to the lender WardManager the lended Human Resource Request from the needy ward |
 | `met_assignment`   | Notify to the needy ward the MET assignment  |
 | `met_assignment(Ward)`| Notifies the Logger that the MET has been assigned|
 
