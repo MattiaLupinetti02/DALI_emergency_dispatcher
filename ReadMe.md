@@ -79,18 +79,18 @@ Design and implement a multi-agent system in the DALI language for the detection
   Updates the Logger with each assignment to ensure full traceability.
 
 - **Protocols and Activities:**  
-  `human_resource_request`, `human_resource_reply_send`, `human_resource_lending`,  
+  `human_resource_request`, `human_resource_reply`, `human_resource_lending`,  
   `assign_human_resource`, `met_request`, `assign_met`, `met_assignment`.
 
 - **Permissions:**
   - **Reads:** `human_resource_request(human_res_map,From)`, `met_request`, `emergency_handled(Ward,Patient)`, `human_resource_restitution(Ward,human_res_map)`
   - **Changes:** `available_equipe`, `met_status`
-  - **Generates:** `human_resource_reply_send(human_res_map,From)`, `met_assignment(Ward)`,  
+  - **Generates:** `human_resource_reply(human_res_map,From)`, `met_assignment(Ward)`,  
     `assign_met`, `assign_human_resource`, `human_resource_restitution(human_res_map)`
 
 - **Responsibilities:**
   - **Liveness:**  
-    `(human_resource_request → human_resource_reply_send) ∨ (met_request → assign_met → met_assignment(Ward)) ∨ (human_resource_restitution(ward,human_res_map) → human_resource_restitution(human_res_map))`
+    `(human_resource_request → human_resource_reply) ∨ (met_request → assign_met → met_assignment(Ward)) ∨ (human_resource_restitution(ward,human_res_map) → human_resource_restitution(human_res_map))`
   - **Safety:**  
     Must avoid assigning already engaged METs or unavailable personnel.  
     Guarantee coherence between `human_resource_lending` and global staff availability across wards.  
