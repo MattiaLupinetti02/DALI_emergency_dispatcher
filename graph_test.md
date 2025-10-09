@@ -13,6 +13,8 @@ HS -->|report new emergency| LOG
 WM1 -->|acknowledge emergency| HS
 
 WM1 -->|request human resources| HRC
+WM1 -->|restitution human resources| HRC
+HRC -->|restitution human resource to the lender ward| WM2
 HRC -->|forward request to other ward| WM2
 WM2 -->|lend human resources| HRC
 HRC -->|reply with available staff| WM1
