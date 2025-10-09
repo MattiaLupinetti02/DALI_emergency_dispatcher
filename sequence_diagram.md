@@ -47,4 +47,3 @@ sequenceDiagram
 
     %% PHASE 7 - Finalization
     HRCoordinator-->>Logger: update_log_met_assignment(WardA)
-    Logger-->>All: Log persistence complete
