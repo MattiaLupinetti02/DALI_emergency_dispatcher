@@ -12,8 +12,9 @@ classDiagram
 
     class WardAgent {
         +set_rrt()
-        +decrease_available_equipe()
-        +increase_available_equipe()
+        +decrease_available_equipe(human_resources_map)
+        +increase_available_equipe(human_resources_map)
+        +human_resource_restitution(human_res_map, From)
         +human_resource_request(human_res_map, From)
         +human_resource_lending(human_res_map, From)
         +met_request()
@@ -42,6 +43,7 @@ classDiagram
 
     SensorAgent --> WardAgent : alarm 
     WardAgent --> CoordinatorAgent : human_resource_request / met_request
+    WardAgent --> CoordinatorAgent : human_resource_lending / human_resource_restitution
     CoordinatorAgent --> WardAgent : met_assignment / human_resource_reply
     SensorAgent --> LoggerAgent : new_emergency
     WardAgent --> LoggerAgent : emergency_handled / met_request
