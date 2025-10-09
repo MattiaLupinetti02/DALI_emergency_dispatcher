@@ -2,7 +2,6 @@
 
 
 graph TD
-    %%=== Agents / Roles ===
     HS[HealthSensor]
     WM1[WardManager (Requester)]
     WM2[WardManager (Lender)]
