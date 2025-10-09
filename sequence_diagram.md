@@ -26,6 +26,11 @@ sequenceDiagram
     WardManager->>WardManager: deacrease_available_equipe(human_resources_map)
     Note right of WardManager: Defines RRT and updates local equipe status
 
+    %% PHASE 5 - Emergency Taken in Charge
+    WardManager->>HealthSensor: taking_charge_emergency
+    Note right of HealthSensor: Stops repeated alarms
+    WardManager->>Logger: update_log_met_request(WardA)
+
     %% PHASE 4 - Critical Emergency → MET Request
     alt critical emergency
         WardManager->>HRCoordinator: met_request
@@ -34,10 +39,7 @@ sequenceDiagram
         HRCoordinator->>Logger: update_log_met_assignment(WardA)
     end
 
-    %% PHASE 5 - Emergency Taken in Charge
-    WardManager->>HealthSensor: taking_charge_emergency
-    Note right of HealthSensor: Stops repeated alarms
-    WardManager->>Logger: update_log_met_request(WardA)
+   
 
     %% PHASE 6 - Resolution
     WardManager->>HRCoordinator: emergency_handled(WardA, PatientX)
