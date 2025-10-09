@@ -1,3 +1,4 @@
+```plantuml
 @startuml
 title Agent Class Diagram - Smart Hospital Emergency MAS
 
