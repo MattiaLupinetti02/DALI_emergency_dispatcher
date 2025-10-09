@@ -45,5 +45,12 @@ sequenceDiagram
     WardManager->>HRCoordinator: emergency_handled(WardA, PatientX)
     WardManager->>Logger: update_log_emergency_handled(WardA, PatientX)
 
+    alt insufficient staff
+        WardManager->>HRCoordinator: human_resource_lending(human_res_map, WardA)
+        WardManager->>WardManager: deacrease_available_equipe(human_resources_map)
+        HRCoordinator-->>WardManager: human_resource_lending(human_res_map, WardA)
+        WardManager->>WardManager: increase_available_equipe(human_resources_map)
+    end
+
     %% PHASE 7 - Finalization
     HRCoordinator-->>Logger: update_log_met_assignment(WardA)
