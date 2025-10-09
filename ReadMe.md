@@ -58,8 +58,8 @@ Design and implement a multi-agent system in the DALI language for the detection
 - **Permissions:**
   - **Reads:** `alarm(Type,Val,Patient)`, `human_resource_reply(human_res_map,Ward)`, `met_assignment`
   - **Changes:** `available_equipe(Ward)`
-  - **Generates:** `human_resource_request(human_res_map,Ward)`, `human_resource_lending(human_res_map,From)`,  
-    `met_request`, `emergency_handled(Ward,Patient)`, `human_resource_restitution(Ward,human_res_map)`
+  - **Generates:** `human_resource_request(human_res_map,Ward)`,  
+    `met_request`, `emergency_handled(Ward,Patient)`, `human_resource_restitution(Ward,human_res_map)`, `human_resource_lending(human_res_map,From)`
 
 - **Responsibilities:**
   - **Liveness:**  
@@ -86,7 +86,7 @@ Design and implement a multi-agent system in the DALI language for the detection
   - **Reads:** `human_resource_request(human_res_map,From)`, `met_request`, `emergency_handled(Ward,Patient)`, `human_resource_restitution(Ward,human_res_map)`
   - **Changes:** `met_status`
   - **Generates:** `human_resource_reply(human_res_map,From)`, `met_assignment(Ward)`,  
-    `assign_met`, `assign_human_resource`, `human_resource_restitution(human_res_map)`
+    `assign_met`, `assign_human_resource`, `human_resource_restitution(Ward,human_res_map)`
 
 - **Responsibilities:**
   - **Liveness:**  
