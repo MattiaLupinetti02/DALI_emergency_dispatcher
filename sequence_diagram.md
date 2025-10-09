@@ -19,7 +19,7 @@ sequenceDiagram
         WardManager->>HRCoordinator: human_resource_request(human_res_map, WardA)
         HRCoordinator-->>WardManagerLender : human_resource_request(human_res_map, WardA)
         WardManagerLender -> HRCoordinator : human_resource_lending(human_res_map, WardA)
-        HRCoordinator -> WardManager : human_resource_reply(human_res_map, WardA)
+        HRCoordinator --> WardManager : human_resource_reply(human_res_map, WardA)
         WardManager->>WardManager: increase_available_equipe(human_resources_map)
     end
 
