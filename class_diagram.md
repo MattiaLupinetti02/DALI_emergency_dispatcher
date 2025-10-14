@@ -44,7 +44,7 @@ classDiagram
     SensorAgent --> WardAgent : alarm 
     WardAgent --> CoordinatorAgent : human_resource_request / met_request
     WardAgent --> CoordinatorAgent : human_resource_lending / human_resource_restitution
-    CoordinatorAgent --> WardAgent : met_assignment / human_resource_reply
+    CoordinatorAgent --> WardAgent : met_assignment / human_resource_reply / human_resource_restore_ward
     SensorAgent --> LoggerAgent : new_emergency
     WardAgent --> LoggerAgent : emergency_handled / met_request
     CoordinatorAgent --> LoggerAgent : met_assignment
