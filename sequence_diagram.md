@@ -51,7 +51,7 @@ sequenceDiagram
     alt insufficient staff
         WardManager->>HRCoordinator: human_resource_restitution(Ward,human_res_map)
         WardManager->>WardManager: deacrease_available_equipe(human_resources_map)
-        HRCoordinator-->>WardManagerLender: human_resource_restitution(Ward,human_res_map)
+        HRCoordinator-->>WardManagerLender: human_resource_restore_ward(human_res_map)
         WardManagerLender->>WardManagerLender: increase_available_equipe(human_resources_map)
     end
 
