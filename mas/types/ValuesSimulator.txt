@@ -1,5 +1,5 @@
-
-
+:- dynamic agent/1.
+agent('ValuesSimulator').
 patient_list([ndonio]).
 
 random_hr(HR) :- random(NUM),HR is 60 + integer(NUM * 141).
@@ -11,11 +11,11 @@ random_patient(P) :- patient_list(List),length(List, L),random(0, L, Index),nth0
 
 send_random_hr(P,HR) :- random_patient(P),random_hr(HR),write('generato paziente '),write(P),write(' e hr '),write(HR),nl.
 
-send_random_hrI(P,HR) :> messageA(HealthSensor1_rep1,send_message(new_hr(P,HR),Me)).
+send_random_hrI(P,HR) :> agent(Me), messageA('HealthSensor',send_message(new_hr(P,HR),Me)).
 
 
 random_o(OO) :- random(NUM), OO is 84 + integer(NUM *10).
 
 send_random_o(P,OO) :- random_patient(P),random_o(OO),write('generato paziente '),write(P),write(' e O2 '),write(OO),nl.
 
-send_random_oI(P,OO) :> messageA(HealthSensor1_rep1,send_message(new_oo(P,OO),Me)).
+send_random_oI(P,OO) :> agent(Me), messageA('HealthSensor',send_message(new_oo(P,OO),Me)).

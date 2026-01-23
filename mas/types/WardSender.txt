@@ -1,6 +1,7 @@
 :- dynamic done/1.
 done(0).
-
+:- dynamic agent/1.
+agent('WardSender').
 leggi_tutte_le_mappeI :>
     open('reparti', read, Stream),
     leggi_e_stampa_mappe_da_stream(Stream),
@@ -18,7 +19,8 @@ leggi_e_stampa_mappe_da_stream(Stream) :-
         true
     ;   (   Termine = reparto(NomeReparto, Lista) ->
             atom_concat('Coord_', NomeReparto, CoordName),
-            messageA(CoordName, send_message(ward(Lista),Me))
+            agent(Me),
+            messageA(CoordName, send_message(ward(3),Me))
         ),
         leggi_e_stampa_mappe_da_stream(Stream)
     ).

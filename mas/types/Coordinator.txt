@@ -12,10 +12,9 @@ make_equipe([Prof_figure|Other_figures],[Value|Other_values],[Prof_figure-Value|
 make_equipe([],[],[]).
 
 alarmE(TP, WR, PT) :>
-	
 	ward_setA,
 	def_urgencyA(TP, WR, PT),
-	findall(urgency(TP, WR, PT), urgency(TP, WR, PT), ListaUrgencies).
+	findall(urgency(TP, WR, PT), urgency(TP, WR, PT), ListaUrgencies), stampa_lista(ListaUrgencies).
 
 def_urgencyA(TP,WR, PT) :>
 	(retract(urgency(TP,WR,PT)) -> true; true),

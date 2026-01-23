@@ -1,18 +1,67 @@
+% setting nome agente e reparto
+
+:- dynamic my_instance_name/1.
+my_instance_name('None').
+
+get_agent_name(Name) :- my_instance_name(Value), Value == 'None'. 
+get_agent_nameI(Name) :> setof(Base, (
+                            source_file(_, Path),
+                            sub_atom(Path, _, _, _, 'HealthSensor'),
+                            base_name(Path, Base)),
+                            [Base]).
+                    
+                    
+base_name(Path, Base) :- 
+    atom(Path),
+    atom_chars(Path, CharList),
+    findall(Pos, nth0(Pos, CharList, '/'), SlashPositions),
+    findall(Pos, nth0(Pos, CharList, '.'), PointPositions),
+    last(SlashPositions,LastSlashPos),
+    last(PointPositions,LastPointPos),
+    StartPos is LastSlashPos + 1,
+    Length is LastPointPos - StartPos,
+    sub_atom(Path, StartPos, Length, _, Base),
+    retractall(my_instance_name(_)),
+    assertz(my_instance_name(Base)).
+
+:- dynamic ward/1.
+ward('None').
+set_ward :- ward(Val), Val == 'None', my_instance_name(Value), Value \= 'None'.
+set_wardI :> 
+    my_instance_name(Val),
+    atom_chars(Val, CharList),
+    findall(Pos, nth0(Pos, CharList, '_'), UnderScorePositions),
+    (UnderScorePositions = [] -> 
+        Base = Val
+    ; 
+        UnderScorePositions = [FirstUnderScorPos|_], 
+        last(UnderScorePositions, LastUnderScorPos),
+        StartPos is FirstUnderScorPos + 1,
+        Length is LastUnderScorPos - FirstUnderScorPos - 1,
+        sub_atom(Val, StartPos, Length, _, Base)
+    ),
+    retractall(ward(_)),
+    assertz(ward(Base)).
+
+%controllo parametri vitali
+
 trashold_hr(180).
 
 trashold_o(89).
 
-new_hrE(Patient,HR) :> critical_hr_out(Patient,HR).
 
-critical_hr_out(Patient,HR) :- trashold_hr(V), HR >= V,  write(Patient), write(' has a high hr: '), write(HR),nl.
+new_hrE(Patient,HR) :> critical_hr_out(Patient,HR).
+new_ooE(Patient,OO) :> critical_oo_out(Patient,OO).
+
+
+critical_hr_out(Patient,HR) :- trashold_hr(V), HR >= V,  write(Patient), write(' has a high hr: '), write(HR),nl,
+messageA('Coord_icu',send_message(alarm('high_hr','rep1',Patient),'HealthSensor')).
 
 critical_hr_out(Patient,HR) :- trashold_hr(V), HR < V, write(Patient), write(' has a regular HR: '), write(HR),nl.
 
 
-
-new_ooE(Patient,OO) :> critical_oo_out(Patient,OO).
-
 critical_oo_out(Patient,OO) :- trashold_o(V), V > OO, write(Patient), write(' has a low SpO2: '), write(OO),nl,
-messageA(Coord_icu,send_message(alarm('low_o2','rep1',Patient),Me)).
+messageA('Coord_icu',send_message(alarm('low_o2','rep1',Patient),'HealthSensor')).
 
 critical_oo_out(Patient,OO) :- trashold_o(V), V =< OO, write(Patient), write(' has a regular SpO2: '),write(OO), nl.
+
