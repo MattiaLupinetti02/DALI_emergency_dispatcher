@@ -1,0 +1,131 @@
+
+:- dynamic ward_equipe/1.
+:- dynamic my_instance_name/1.
+:- dynamic my_ward_name/1.
+:- dynamic my_ward_equipe/1.
+:- dynamic equipe_read/1.
+:- dynamic config/1.
+config(0).
+equipe_read(0).
+my_instance_name('None').
+
+read_wardsI :> open('reparti', read, Stream), read_loop(Stream), close(Stream), retractall(equipe_read(_)), assertz(equipe_read(1)).
+
+read_wards :- equipe_read(A), A =:= 0, my_ward_name(Name).
+
+read_loop(Stream) :-
+    read(Stream, Termine),
+    (   Termine == end_of_file ->
+        true
+    ;   Termine = reparto(NomeReparto, Lista),
+        (   my_ward_name(Ward),
+            NomeReparto == Ward
+        ->  assertz(my_ward_equipe(Lista))
+        ;   true
+        ),
+        read_loop(Stream)
+    ).
+
+
+get_agent_name(Name) :- my_instance_name(Value), Value == 'None'. 
+
+get_agent_nameI(_) :> 
+    setof(Base, (
+        source_file(_, Path),
+        sub_atom(Path, _, _, _, 'Ward'),
+        base_name(Path, Base)
+    ), Bases),    
+    Bases = [FirstBase|_],
+    (sub_atom(FirstBase, 0, 5, After, 'Ward_') -> 
+        sub_atom(FirstBase, 5, After, 0, Ward),
+        retractall(my_ward_name(_)),
+        assertz(my_ward_name(Ward))
+    ;
+        write('ERRORE: Base non inizia con "Ward_": '), write(FirstBase), nl
+    ).
+                    
+base_name(Path, Base) :- 
+    atom(Path),
+    atom_chars(Path, CharList),
+    findall(Pos, nth0(Pos, CharList, '/'), SlashPositions),
+    findall(Pos, nth0(Pos, CharList, '.'), PointPositions),
+    (SlashPositions = [] -> 
+        LastSlashPos = -1
+    ; 
+        last(SlashPositions, LastSlashPos)
+    ),
+    (PointPositions = [] -> 
+        (LastSlashPos = -1 -> 
+            Base = Path
+        ;
+            StartPos is LastSlashPos + 1,
+            sub_atom(Path, StartPos, _, 0, Base)
+        )
+    ; 
+        last(PointPositions, LastPointPos),
+        StartPos is LastSlashPos + 1,
+        Length is LastPointPos - StartPos,
+        sub_atom(Path, StartPos, Length, _, Base)
+    ),    
+    retractall(my_instance_name(_)),
+    assertz(my_instance_name(Base)).
+
+
+
+equipe_staff(['nurses','doctors','resuscitators']).
+
+make_wardI :>
+    ward_equipe(Map),
+    write('ward equipe setted:'),write(Map) , nl,
+	my_ward_name(Ward), write('ward name: '), write(Ward), nl,
+	my_instance_name(Name), write('Instance name: '), write(Name), nl,
+	write('end configuration') .
+
+
+make_ward :-my_ward_name(Name),
+			config(V),
+			V =:= 0,
+			my_instance_name(Inst_name),
+			equipe_staff(Staff_list),
+			my_ward_equipe(List),
+			equipe_read(X),
+			X =:= 1,
+			make_equipe(Staff_list,List,Map),
+			assertz(ward_equipe(Map)),
+			retractall(config(_)),
+			assertz(config(1)).
+
+
+make_equipe([Prof_figure|Other_figures],[Value|Other_values],[Prof_figure-Value|Other_couples]) :-
+        make_equipe(Other_figures,Other_values,Other_couples).
+
+make_equipe([],[],[]).
+
+
+
+%allarmi
+alarmE(TP, WR, PT) :>
+	ward_setA,
+	def_urgencyA(TP, WR, PT),
+	findall(urgency(TP, WR, PT), urgency(TP, WR, PT), ListaUrgencies), stampa_lista(ListaUrgencies).
+
+def_urgencyA(TP,WR, PT) :>
+	(retract(urgency(TP,WR,PT)) -> true; true),
+	assertz(urgency(TP,WR,PT)).
+
+
+handle_urgency(TP,WR,PT) :- urgency(TP,WR,PT), write(TP), write(' '), write(WR), write(' '), write(PT).
+ward_set :-
+    my_ward_equipe(_).
+
+
+
+print_map([]).
+print_map([K-V | T]) :>
+    format('key ~w~nvalue ~w~n', [K, V]),
+    print_map(T).
+
+stampa_lista([]).
+stampa_lista([Head|Tail]) :-
+    write(Head),
+    stampa_lista(Tail).

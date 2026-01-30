@@ -1,28 +1,33 @@
-% setting nome agente e reparto
-
 :- dynamic my_instance_name/1.
 my_instance_name('None').
 
 get_agent_name(Name) :- my_instance_name(Value), Value == 'None'. 
-get_agent_nameI(Name) :> setof(Base, (
-                            source_file(_, Path),
-                            sub_atom(Path, _, _, _, 'HealthSensor'),
-                            base_name(Path, Base)),
-                            [Base]).
-                    
-                    
-base_name(Path, Base) :- 
+get_agent_nameI(_) :>
+    setof(Base,
+        Path^(
+            source_file(_, Path),
+            sub_atom(Path, _, _, _, 'HealthSensor'),
+            pure_base_name(Path, Base)
+        ),
+        Bases),
+    Bases = [First | _],
+    write(First), nl,
+    retractall(my_instance_name(_)),
+    assertz(my_instance_name(First)).
+
+
+pure_base_name(Path, Base) :-
     atom(Path),
     atom_chars(Path, CharList),
     findall(Pos, nth0(Pos, CharList, '/'), SlashPositions),
     findall(Pos, nth0(Pos, CharList, '.'), PointPositions),
-    last(SlashPositions,LastSlashPos),
-    last(PointPositions,LastPointPos),
+    last(SlashPositions, LastSlashPos),
+    last(PointPositions, LastPointPos),
     StartPos is LastSlashPos + 1,
     Length is LastPointPos - StartPos,
-    sub_atom(Path, StartPos, Length, _, Base),
-    retractall(my_instance_name(_)),
-    assertz(my_instance_name(Base)).
+    sub_atom(Path, StartPos, Length, _, Base).
+
+
 
 :- dynamic ward/1.
 ward('None').
@@ -41,7 +46,32 @@ set_wardI :>
         sub_atom(Val, StartPos, Length, _, Base)
     ),
     retractall(ward(_)),
-    assertz(ward(Base)).
+    assertz(ward(Base)),
+    write('Ward name: '), write(Base), nl.
+
+
+:- dynamic p_name/1.
+p_name('None').
+set_p_name :- p_name(Val), Val == 'None', my_instance_name(Value), Value \= 'None'.
+set_p_nameI :> 
+    my_instance_name(Val),
+    atom_chars(Val, CharList),
+    findall(Pos, nth0(Pos, CharList, '_'), UnderScorePositions),
+    ( UnderScorePositions = [] ->
+        Pname = Val
+    ;
+        last(UnderScorePositions, LastUnderScorPos),
+        Start is LastUnderScorPos + 1,
+        sub_atom(Val, Start, _, 0, Pname)
+    ),
+    retractall(p_name(_)),
+    assertz(p_name(Pname)),
+    write('Patient name: '), write(Pname),nl.
+
+:- dynamic config/1.
+config(0).
+final_config_output :- config(A),A == 0, p_name(Pname), Pname \= 'None', ward(Wname), Wname \= 'None',retractall(config(_)), assertz(config(1)).
+final_config_outputI :> write('End configuration').
 
 %controllo parametri vitali
 
@@ -54,14 +84,15 @@ new_hrE(Patient,HR) :> critical_hr_out(Patient,HR).
 new_ooE(Patient,OO) :> critical_oo_out(Patient,OO).
 
 
-critical_hr_out(Patient,HR) :- trashold_hr(V), HR >= V,  write(Patient), write(' has a high hr: '), write(HR),nl,
-messageA('Coord_icu',send_message(alarm('high_hr','rep1',Patient),'HealthSensor')).
+critical_hr_out(Patient,HR) :-  trashold_hr(V), HR >= V,  write(Patient), write(' has a high hr: '), write(HR),nl,
+                                ward(WardName),my_ward_name(InstanceName), config(A), A == 1, p_name(Pname),
+                                atom_concat('Ward_', WardName, InstanceWardName),
+                                messageA(InstanceWardName,send_message(alarm('high_hr','rep1',Pname),InstanceName)).
 
-critical_hr_out(Patient,HR) :- trashold_hr(V), HR < V, write(Patient), write(' has a regular HR: '), write(HR),nl.
 
 
-critical_oo_out(Patient,OO) :- trashold_o(V), V > OO, write(Patient), write(' has a low SpO2: '), write(OO),nl,
-messageA('Coord_icu',send_message(alarm('low_o2','rep1',Patient),'HealthSensor')).
-
-critical_oo_out(Patient,OO) :- trashold_o(V), V =< OO, write(Patient), write(' has a regular SpO2: '),write(OO), nl.
+critical_oo_out(Patient,OO) :-  trashold_o(V), V > OO, write(Patient), write(' has a low SpO2: '), write(OO),nl,
+                                ward(WardName),my_ward_name(InstanceName), config(A), A == 1 , p_name(Pname),
+                                atom_concat('Ward_', WardName, InstanceWardName),
+                                messageA(InstanceWardName,send_message(alarm('low_o2','rep1',Pname),InstanceName)).
 
