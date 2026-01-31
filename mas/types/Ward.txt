@@ -161,7 +161,6 @@ taking_charge_emergency(Patient,SensorName) :-
                                     make_healthsensor_name(Patient, SensorName).
                                     
 taking_charge_emergencyI(Patient,SensorName) :>    config(A), A =:= 1, my_instance_name(AgentName),
-                                        write('SensorName: '), write(SensorName),nl,
                                         messageA(SensorName,send_message('Takenincharge',AgentName)),
                                         retractall(urgency(_,_,Patient)).
 
