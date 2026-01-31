@@ -1,1 +1,0 @@
-agent('work/Coord_icu','Coord_icu','no',italian,['conf/communication'],['/progetto/src/communication_fipa','/progetto/src/learning','/progetto/src/planasp'],'no','/progetto/src/onto/dali_onto.txt',[]).

@@ -1,0 +1,3 @@
+% pattern -> patient(Patient_name,Patient_ward)
+patient(p1,icu).
+patient(p2,icu).

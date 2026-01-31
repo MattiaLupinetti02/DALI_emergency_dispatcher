@@ -1,25 +1,49 @@
 
-:-dynamic ward_equipe/1.
+:-dynamic my_instance_name/1.
 
-equipe_staff(['nurses','practitioners','resuscitators']).
+my_instance_name('None').
 
-eve(ward(var_List)):-equipe_staff(var_Staff_list),a(make_equipe(var_Staff_list,var_List,var_Map)),assertz(ward_equipe(var_Map)).
+get_agent_name(var_Name):-my_instance_name(var_Value),var_Value=='None'.
 
-make_equipe([var_Prof_figure|var_Other_figures],[var_Value|var_Other_values],[var_Prof_figure-var_Value|var_Other_couples]):-make_equipe(var_Other_figures,var_Other_values,var_Other_couples).
+evi(get_agent_name(var__)):-setof(var_Base,var_Path^(source_file(var__,var_Path),sub_atom(var_Path,var__,var__,var__,'HealthSensor'),pure_base_name(var_Path,var_Base)),var_Bases),var_Bases=[var_First|var__],write(var_First),nl,retractall(my_instance_name(var__)),assertz(my_instance_name(var_First)).
 
-make_equipe([],[],[]).
+pure_base_name(var_Path,var_Base):-atom(var_Path),atom_chars(var_Path,var_CharList),findall(var_Pos,nth0(var_Pos,var_CharList,'/'),var_SlashPositions),findall(var_Pos,nth0(var_Pos,var_CharList,'.'),var_PointPositions),last(var_SlashPositions,var_LastSlashPos),last(var_PointPositions,var_LastPointPos),var_StartPos is var_LastSlashPos+1,var_Length is var_LastPointPos-var_StartPos,sub_atom(var_Path,var_StartPos,var_Length,var__,var_Base).
 
-eve(alarm(var_TP,var_WR,var_PT)):-a(ward_set),a(def_urgency(var_TP,var_WR,var_PT)),findall(urgency(var_TP,var_WR,var_PT),urgency(var_TP,var_WR,var_PT),var_ListaUrgencies).
+:-dynamic ward/1.
 
-a(def_urgency(var_TP,var_WR,var_PT)):-(retract(urgency(var_TP,var_WR,var_PT))->true;true),assertz(urgency(var_TP,var_WR,var_PT)).
+ward('None').
 
-handle_urgency(var_TP,var_WR,var_PT):-urgency(var_TP,var_WR,var_PT),write(var_TP),write(' '),write(var_WR),write(' '),write(var_PT).
+set_ward:-ward(var_Val),var_Val=='None',my_instance_name(var_Value),var_Value\='None'.
 
-ward_set:-ward_equipe(var__).
+evi(set_ward):-my_instance_name(var_Val),atom_chars(var_Val,var_CharList),findall(var_Pos,nth0(var_Pos,var_CharList,'_'),var_UnderScorePositions),(var_UnderScorePositions=[]->var_Base=var_Val;var_UnderScorePositions=[var_FirstUnderScorPos|var__],last(var_UnderScorePositions,var_LastUnderScorPos),var_StartPos is var_FirstUnderScorPos+1,var_Length is var_LastUnderScorPos-var_FirstUnderScorPos-1,sub_atom(var_Val,var_StartPos,var_Length,var__,var_Base)),retractall(ward(var__)),assertz(ward(var_Base)),write('Ward name: '),write(var_Base),nl.
 
-stampa_lista([]).
+:-dynamic p_name/1.
 
-stampa_lista([var_Head|var_Tail]):-write(var_Head),stampa_lista(var_Tail).
+p_name('None').
+
+set_p_name:-p_name(var_Val),var_Val=='None',my_instance_name(var_Value),var_Value\='None'.
+
+evi(set_p_name):-my_instance_name(var_Val),atom_chars(var_Val,var_CharList),findall(var_Pos,nth0(var_Pos,var_CharList,'_'),var_UnderScorePositions),(var_UnderScorePositions=[]->var_Pname=var_Val;last(var_UnderScorePositions,var_LastUnderScorPos),var_Start is var_LastUnderScorPos+1,sub_atom(var_Val,var_Start,var__,0,var_Pname)),retractall(p_name(var__)),assertz(p_name(var_Pname)),write('Patient name: '),write(var_Pname),nl.
+
+:-dynamic config/1.
+
+config(0).
+
+final_config_output:-config(var_A),var_A==0,p_name(var_Pname),var_Pname\='None',ward(var_Wname),var_Wname\='None',retractall(config(var__)),assertz(config(1)).
+
+evi(final_config_output):-write('End configuration').
+
+trashold_hr(180).
+
+trashold_o(89).
+
+eve(new_hr(var_Patient,var_HR)):-critical_hr_out(var_Patient,var_HR).
+
+eve(new_oo(var_Patient,var_OO)):-critical_oo_out(var_Patient,var_OO).
+
+critical_hr_out(var_Patient,var_HR):-trashold_hr(var_V),var_HR>=var_V,write(var_Patient),write(' has a high hr: '),write(var_HR),nl,ward(var_WardName),config(var_A),var_A==1,p_name(var_Pname),atom_concat('Ward_',var_WardName,var_InstanceWardName),my_instance_name(var_InstanceName),write('from: '),write(var_InstanceName),nl,write('to: '),write(var_InstanceWardName),nl,a(message(var_InstanceWardName,send_message(alarm('high_hr',var_WardName,var_Pname),var_InstanceName))).
+
+critical_oo_out(var_Patient,var_OO):-trashold_o(var_V),var_V>var_OO,write(var_Patient),write(' has a low SpO2: '),write(var_OO),nl,ward(var_WardName),config(var_A),var_A==1,p_name(var_Pname),atom_concat('Ward_',var_WardName,var_InstanceWardName),my_instance_name(var_InstanceName),write('from: '),write(var_InstanceName),nl,write('to: '),write(var_InstanceWardName),nl,a(message(var_InstanceWardName,send_message(alarm('low_o2',var_WardName,var_Pname),var_InstanceName))).
 
 :-dynamic receive/1.
 
@@ -111,11 +135,11 @@ call_inform(var_X,var_Ag,var_T):-asse_cosa(past_event(inform(var_X,var_Ag),var_T
 
 call_refuse(var_X,var_Ag,var_T):-clause(agent(var_A),var__),asse_cosa(past_event(var_X,var_T)),statistics(walltime,[var_Tp,var__]),retractall(past(var_X,var__,var_Ag)),assert(past(var_X,var_Tp,var_Ag)),a(message(var_Ag,reply(received(var_X),var_A))).
 
-call_cfp(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_328113,var_Ontology,_328117),_328107),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_cfp(var_A,var_C,var_Ag,_328151)),a(message(var_Ag,propose(var_A,[_328151],var_AgI))),retractall(ext_agent(var_Ag,_328189,var_Ontology,_328193)).
+call_cfp(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_437135,var_Ontology,_437139),_437129),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_cfp(var_A,var_C,var_Ag,_437173)),a(message(var_Ag,propose(var_A,[_437173],var_AgI))),retractall(ext_agent(var_Ag,_437211,var_Ontology,_437215)).
 
-call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_327987,var_Ontology,_327991),_327981),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,accept_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_328057,var_Ontology,_328061)).
+call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_437009,var_Ontology,_437013),_437003),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,accept_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_437079,var_Ontology,_437083)).
 
-call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_327875,var_Ontology,_327879),_327869),not(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,reject_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_327931,var_Ontology,_327935)).
+call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_436897,var_Ontology,_436901),_436891),not(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,reject_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_436953,var_Ontology,_436957)).
 
 call_accept_proposal(var_A,var_Mp,var_Ag,var_T):-asse_cosa(past_event(accepted_proposal(var_A,var_Mp,var_Ag),var_T)),statistics(walltime,[var_Tp,var__]),retractall(past(accepted_proposal(var_A,var_Mp,var_Ag),var__,var_Ag)),assert(past(accepted_proposal(var_A,var_Mp,var_Ag),var_Tp,var_Ag)).
 
@@ -123,7 +147,7 @@ call_reject_proposal(var_A,var_Mp,var_Ag,var_T):-asse_cosa(past_event(rejected_p
 
 call_failure(var_A,var_M,var_Ag,var_T):-asse_cosa(past_event(failed_action(var_A,var_M,var_Ag),var_T)),statistics(walltime,[var_Tp,var__]),retractall(past(failed_action(var_A,var_M,var_Ag),var__,var_Ag)),assert(past(failed_action(var_A,var_M,var_Ag),var_Tp,var_Ag)).
 
-call_cancel(var_A,var_Ag):-if(clause(high_action(var_A,var_Te,var_Ag),_327439),retractall(high_action(var_A,var_Te,var_Ag)),true),if(clause(normal_action(var_A,var_Te,var_Ag),_327473),retractall(normal_action(var_A,var_Te,var_Ag)),true).
+call_cancel(var_A,var_Ag):-if(clause(high_action(var_A,var_Te,var_Ag),_436461),retractall(high_action(var_A,var_Te,var_Ag)),true),if(clause(normal_action(var_A,var_Te,var_Ag),_436495),retractall(normal_action(var_A,var_Te,var_Ag)),true).
 
 external_refused_action_propose(var_A,var_Ag):-clause(not_executable_action_propose(var_A,var_Ag),var__).
 
@@ -131,19 +155,31 @@ evi(external_refused_action_propose(var_A,var_Ag)):-clause(agent(var_Ai),var__),
 
 refused_message(var_AgM,var_Con):-clause(eliminated_message(var_AgM,var__,var__,var_Con,var__),var__).
 
-refused_message(var_To,var_M):-clause(eliminated_message(var_M,var_To,motivation(conditions_not_verified)),_327255).
+refused_message(var_To,var_M):-clause(eliminated_message(var_M,var_To,motivation(conditions_not_verified)),_436277).
 
 evi(refused_message(var_AgM,var_Con)):-clause(agent(var_Ai),var__),a(message(var_AgM,inform(var_Con,motivation(refused_message),var_Ai))),retractall(eliminated_message(var_AgM,var__,var__,var_Con,var__)),retractall(eliminated_message(var_Con,var_AgM,motivation(conditions_not_verified))).
 
-send_jasper_return_message(var_X,var_S,var_T,var_S0):-clause(agent(var_Ag),_327103),a(message(var_S,send_message(sent_rmi(var_X,var_T,var_S0),var_Ag))).
+send_jasper_return_message(var_X,var_S,var_T,var_S0):-clause(agent(var_Ag),_436125),a(message(var_S,send_message(sent_rmi(var_X,var_T,var_S0),var_Ag))).
 
-gest_learn(var_H):-clause(past(learn(var_H),var_T,var_U),_327051),learn_if(var_H,var_T,var_U).
+gest_learn(var_H):-clause(past(learn(var_H),var_T,var_U),_436073),learn_if(var_H,var_T,var_U).
 
-evi(gest_learn(var_H)):-retractall(past(learn(var_H),_326927,_326929)),clause(agente(_326949,_326951,_326953,var_S),_326945),name(var_S,var_N),append(var_L,[46,112,108],var_N),name(var_F,var_L),manage_lg(var_H,var_F),a(learned(var_H)).
+evi(gest_learn(var_H)):-retractall(past(learn(var_H),_435949,_435951)),clause(agente(_435971,_435973,_435975,var_S),_435967),name(var_S,var_N),append(var_L,[46,112,108],var_N),name(var_F,var_L),manage_lg(var_H,var_F),a(learned(var_H)).
 
-cllearn:-clause(agente(_326721,_326723,_326725,var_S),_326717),name(var_S,var_N),append(var_L,[46,112,108],var_N),append(var_L,[46,116,120,116],var_To),name(var_FI,var_To),open(var_FI,read,_326821,[]),repeat,read(_326821,var_T),arg(1,var_T,var_H),write(var_H),nl,var_T==end_of_file,!,close(_326821).
+cllearn:-clause(agente(_435743,_435745,_435747,var_S),_435739),name(var_S,var_N),append(var_L,[46,112,108],var_N),append(var_L,[46,116,120,116],var_To),name(var_FI,var_To),open(var_FI,read,_435843,[]),repeat,read(_435843,var_T),arg(1,var_T,var_H),write(var_H),nl,var_T==end_of_file,!,close(_435843).
 
 send_msg_learn(var_T,var_A,var_Ag):-a(message(var_Ag,confirm(learn(var_T),var_A))).
+
+allowed_sender_sensor(['HealthSensor_icu_p1','HealthSensor_icu_p2']).
+
+allowed_receiver_sensor(['Ward_icu']).
+
+tell(var_From,var_To,send_message(var_M)):-allowed_receiver_sensor(var_List_a),allowed_sender_sensor(var_List_b),memberchk(var_To,var_List_a),memberchk(var_From,var_List_b).
+
+allowed_sender_simulator(['ValuesSimulator']).
+
+allowed_receiver_simulator(['HealthSensor_icu_p1','HealthSensor_icu_p2']).
+
+tell(var_From,var_To,send_message(var_M)):-allowed_receiver_simulator(var_List_a),allowed_sender_simulator(var_List_b),memberchk(var_To,var_List_a),memberchk(var_From,var_List_b).
 
 told(var_From,send_message(var_M)):-true.
 

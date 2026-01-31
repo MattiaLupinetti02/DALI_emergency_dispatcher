@@ -1,1 +1,3 @@
-reparto(icu, [8,0, 3, 3]).
+% pattern -> ward(patient_ward, list_number_equipe) equipe in this order-> 'nurses','doctors','resuscitators'
+reparto(icu, [8, 3, 3]).
+reparto(cardiology, [4, 2, 2]).

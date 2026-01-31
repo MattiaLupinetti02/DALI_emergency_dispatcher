@@ -1,1 +1,0 @@
-send_message(send_message(ward([8,0,3,3]),_909695))

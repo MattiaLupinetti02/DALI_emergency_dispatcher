@@ -26,9 +26,9 @@ fi
 # tmux new-session -d -s DALI_session top
 
 # Define paths and variables
-SICSTUS_HOME=/project
-MAIN_HOME=/project/DALI_emergency_dispatcher
-DALI_HOME=/project/src
+SICSTUS_HOME=/project/prog_env
+MAIN_HOME=/project/prog_env/DALI_emergency_dispatcher
+DALI_HOME=/project/prog_env/DALI/src
 CONF_DIR=conf
 PROLOG="$SICSTUS_HOME/bin/sicstus"
 WAIT="ping -c 3 127.0.0.1"
