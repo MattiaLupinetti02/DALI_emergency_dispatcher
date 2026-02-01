@@ -1,0 +1,43 @@
+:- dynamic met/1.
+:- dynamic wards/1.
+:- dynamic equipe_read/1.
+:- dynamic config/1.
+config(0).
+equipe_read(0).
+met(0).
+wards([]).
+
+read_wardsI :> 
+                open('reparti', read, Stream),
+                read_loop(Stream), close(Stream),
+                retractall(equipe_read(_)),
+                assertz(equipe_read(1)),
+                wards(WardsList),write(WardsList).
+
+read_wards :- equipe_read(A), A =:= 0.
+
+
+read_loop(Stream) :-
+    read(Stream, Termine),
+    (   Termine == end_of_file ->
+        true
+    ;   Termine = reparto(NomeReparto, Lista),
+        (   
+            wards(WardsList),
+            append(WardsList,[NomeReparto], Temp),
+            retractall(wards(_)),
+            assertz(wards(Temp))
+        ;   true
+        ),
+        read_loop(Stream)
+    ).
+
+human_resource_requestE(Nurses,N,Doctors,D,Resuscitators,R) :>
+    write(Nurses),nl,
+    write(N), nl,
+    write(Doctors),nl,
+    write(D), nl,
+    write(Resuscitators),
+    write(R), nl.
+
+

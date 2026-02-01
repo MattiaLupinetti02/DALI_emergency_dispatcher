@@ -104,77 +104,124 @@ make_equipe([Prof_figure|Other_figures],[Value|Other_values],[Prof_figure-Value|
 make_equipe([],[],[]).
 
 :- dynamic urgency/3.
-:- dynamic rrt/1.
+:- dynamic rrt_assigned/1.
 rrt([]).
 rrt_format(['nurses'-2,'doctors'-1,'resuscitators'-1]).
 
 alarmE(TP, WR, PT) :>
 	config(A), A=:=1,
+    write('nuova urgenza paziente: '), write(PT),nl,
 	def_urgencyA(TP, WR, PT).
 
 def_urgencyA(TP,WR, PT) :>
 	(retract(urgency(TP,WR,PT)) -> true; true),
 	assertz(urgency(TP,WR,PT)).
 
-checkRRT([],[]).
-checkRRT([Key_f-Value_f | Tail_f], [Key_e-Value_e | Tail_e]) :- Value_e >= Value_f , checkRRT(Tail_f,Tail_e).
+
+
+
+checkRRT(RRT, Equipe, Needy) :-
+    checkRRT(RRT, Equipe, [], Needy).
+
+checkRRT([], _, Acc, Acc).
+
+checkRRT([Key-FVal | FT], Equipe, Acc, Needy) :-
+    (   member(Key-EVal, Equipe)
+    ->  true
+    ;   EVal = 0
+    ),
+    (   EVal >= FVal
+    ->  NewAcc = Acc
+    ;   Missing is FVal - EVal,
+        NewAcc = [Key-Missing | Acc]
+    ),
+    checkRRT(FT, Equipe, NewAcc, Needy).
+
 
 assign_rrt(Type, Ward, Patient) :-
-    config(A), A =:= 1,
-    findall(urgency(TP, WR, PT), urgency(TP, WR, PT), Lista),
-    (   Lista = [urgency(Type, Ward, Patient) | _]
-    ->  true
-    ;   fail
-    ),
-    rrt_format(Rrt_format_map),
-    ward_equipe(Equipe_map),
-    checkRRT(Rrt_format_map, Equipe_map).
+    config(1),
+    urgency(Type, Ward, Patient),write('assegno rrt al paziente '),write(Patient),nl.
+
+:- dynamic external_hr_request/1.
+external_hr_request(0).
+
+kv_to_need([], []).
+kv_to_need([K-V | T], [need(K,V) | NT]) :-
+    kv_to_need(T, NT).
 
 assign_rrtI(Type, Ward, Patient) :>
 
-    rrt_format(Rrt_format_map),
-    ward_equipe(Equipe_map),
+    rrt_format(RRT),
+    ward_equipe(Equipe),
 
-    load_rrt(Rrt_format_map, Equipe_map, NewEquipe),
+    checkRRT(RRT, Equipe, NeedyMap),
+    write('NeedyMap = '), write(NeedyMap), nl,
 
-    retractall(ward_equipe(_)),
-    assertz(ward_equipe(NewEquipe)),
+    (
+        NeedyMap == [] ->
+        (
+            load_rrt(RRT, Equipe, NewEquipe),
+            retractall(ward_equipe(_)),
+            assertz(ward_equipe(NewEquipe)),
+            retractall(rrt_assigned(_)),
+            assertz(rrt_assigned(Patient)),
+            write('[OK] RRT assegnato al paziente '),
+            write(Patient), nl
+        )
+    ;
+        my_instance_name(Me),
+        write('[WARN] Risorse insufficienti: '),
+        write(NeedyMap), nl,write(Me),nl,
+        kv_to_need(NeedyMap, NeedList),
+        write(NeedList),
+        get_value('nurses',NeedyMap,0,N),
+        get_value('doctors',NeedyMap,0,D),
+        get_value('resuscitators',NeedyMap,0,R),
+        messageA(
+            'HRCoordinator',
+            send_message(human_resource_request('nurses',N,'doctors',D,'resuscitators',R), Me)
+        )
+        
+    ).
 
-    retractall(rrt(_)),
-    assertz(rrt(Patient)),
+get_value(Chiave, ListaCoppie, Default, Valore) :-
+    (member(Chiave-Valore, ListaCoppie) ->
+        true
+    ;
+        Valore = Default
+    ).
 
-    write('Equipe updated: '), write(NewEquipe), nl,
-    write('The assigned rrt is: '), write(Rrt_format_map), write(' to the patient '), write(Patient), nl.
+
 
 make_healthsensor_name(Patient, SensorName) :-
-                                    my_ward_name(Ward),
-                                    atom_concat('HealthSensor_', Ward, A1),
-                                    atom_concat(A1, '_', A2),
-                                    atom_concat(A2, Patient, SensorName).
+    my_ward_name(Ward),
+    atom_concat('HealthSensor_', Ward, A1),
+    atom_concat(A1, '_', A2),
+    atom_concat(A2, Patient, SensorName).
 
 
 
-taking_charge_emergency(Patient,SensorName) :-
-                                    my_ward_name(Ward),
-                                    findall(rrt(P), rrt(P), Rrt_list),
-                                    Rrt_list = [rrt(Patient)|_],
-                                    make_healthsensor_name(Patient, SensorName).
-                                    
-taking_charge_emergencyI(Patient,SensorName) :>    config(A), A =:= 1, my_instance_name(AgentName),
-                                        messageA(SensorName,send_message('Takenincharge',AgentName)),
-                                        retractall(urgency(_,_,Patient)).
+
+taking_charge_emergency(Patient, Sensor) :-
+    rrt_assigned(Patient),
+    make_healthsensor_name(Patient, Sensor).
+
+ taking_charge_emergencyI(Patient, Sensor) :>
+    urgency(_,_,Patient),
+    my_instance_name(Me),
+    write('Emergenza gestita per '),
+    write(Patient), nl,
+    messageA(Sensor, send_message(taking_charge_emergency, Me)),
+    retractall(urgency(_,_,Patient)).
+
 
 
 load_rrt([], Equipe, Equipe).
 
 load_rrt([Key-RRTVal | T], Equipe, FinalEquipe) :-
-                                        select(Key-EquipeVal, Equipe, RestEquipe),  
-                                        NewVal is EquipeVal - RRTVal,
-                                        NewEquipe = [Key-NewVal | RestEquipe],      
-                                        load_rrt(T, NewEquipe, FinalEquipe).
-
-
-
+    select(Key-EquipeVal, Equipe, Rest),
+    NewVal is EquipeVal - RRTVal,
+    load_rrt(T, [Key-NewVal | Rest], FinalEquipe).
 
 
 
