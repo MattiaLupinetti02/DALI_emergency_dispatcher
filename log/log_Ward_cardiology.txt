@@ -1,0 +1,1 @@
+send_message(send_message(human_resource_lending(p2,Ward_icu),Ward_cardiology))

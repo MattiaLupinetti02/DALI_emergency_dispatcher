@@ -74,7 +74,7 @@ read_loop(Stream) :-
 
 
 
-equipe_staff(['nurses','doctors','resuscitators']).
+equipe_staff(['Nurses','Doctors','Resuscitators']).
 
 make_wardI :>
     ward_equipe(Map),
@@ -106,11 +106,10 @@ make_equipe([],[],[]).
 :- dynamic urgency/3.
 :- dynamic rrt_assigned/1.
 rrt([]).
-rrt_format(['nurses'-2,'doctors'-1,'resuscitators'-1]).
+rrt_format(['Nurses'-2,'Doctors'-1,'Resuscitators'-1]).
 
 alarmE(TP, WR, PT) :>
 	config(A), A=:=1,
-    write('nuova urgenza paziente: '), write(PT),nl,
 	def_urgencyA(TP, WR, PT).
 
 def_urgencyA(TP,WR, PT) :>
@@ -140,20 +139,23 @@ checkRRT([Key-FVal | FT], Equipe, Acc, Needy) :-
 
 assign_rrt(Type, Ward, Patient) :-
     config(1),
-    urgency(Type, Ward, Patient),write('assegno rrt al paziente '),write(Patient),nl.
+    urgency(Type, Ward, Patient).
 
 :- dynamic external_hr_request/1.
-external_hr_request(0).
-
+external_hr_request([]).
 kv_to_need([], []).
 kv_to_need([K-V | T], [need(K,V) | NT]) :-
     kv_to_need(T, NT).
 
 assign_rrtI(Type, Ward, Patient) :>
-
     rrt_format(RRT),
+    write(' RRT:'),write(RRT),nl,
     ward_equipe(Equipe),
-
+    write(' Equipe:'),write(Equipe),nl,
+    write(' Patient:'),write(Patient),nl,
+    external_hr_request(Help_req_list),
+    write(' Help_req_list:'),write(Help_req_list),nl,
+    \+member(Patient,Help_req_list),
     checkRRT(RRT, Equipe, NeedyMap),
     write('NeedyMap = '), write(NeedyMap), nl,
 
@@ -168,18 +170,25 @@ assign_rrtI(Type, Ward, Patient) :>
             write('[OK] RRT assegnato al paziente '),
             write(Patient), nl
         )
-    ;
-        my_instance_name(Me),
-        write('[WARN] Risorse insufficienti: '),
-        write(NeedyMap), nl,write(Me),nl,
-        kv_to_need(NeedyMap, NeedList),
-        write(NeedList),
-        get_value('nurses',NeedyMap,0,N),
-        get_value('doctors',NeedyMap,0,D),
-        get_value('resuscitators',NeedyMap,0,R),
-        messageA(
-            'HRCoordinator',
-            send_message(human_resource_request('nurses',N,'doctors',D,'resuscitators',R), Me)
+    ;   (
+            append(Help_req_list, [Patient],New_help_req_list),
+            retract(external_hr_request(Help_req_list)),
+            assertz(external_hr_request(New_help_req_list)),
+            my_instance_name(Me),
+            write('[WARN] Risorse insufficienti: '),
+            kv_to_need(NeedyMap, NeedList),
+            write(NeedList),
+            get_value('Nurses',NeedyMap,0,N),
+            get_value('Doctors',NeedyMap,0,D),
+            get_value('Resuscitators',NeedyMap,0,R),
+            write(N),
+            write(D),
+            write(R),
+            messageA(
+                'HRCoordinator_instance',
+                send_message(human_resource_request('Nurses',N,'Doctors',D,'Resuscitators',R, Me, Patient), Me)
+            )
+            
         )
         
     ).
@@ -223,7 +232,25 @@ load_rrt([Key-RRTVal | T], Equipe, FinalEquipe) :-
     NewVal is EquipeVal - RRTVal,
     load_rrt(T, [Key-NewVal | Rest], FinalEquipe).
 
+select_needy(List, Result) :- findall(Key-Value, (member(Key-Value, List), Value > 0), Result).
 
+human_resource_requestE(Nurses,N,Doctors,D,Resuscitators,R,Ward,Patient) :>
+                                                                        write('Received request of: '), write(Nurses),write(' '), write(N),nl,
+                                                                        write(Doctors),write(' '), write(D),nl, 
+                                                                        write(Resuscitators),write(' '),write(R),nl,
+                                                                        write('from the ward: '), write(Ward),nl,
+                                                                        write('for the patient: '), write(Patient),nl,
+                                                                        select_needy([Nurses-N,Doctors-D,Resuscitators-R], Requested),
+                                                                        ward_equipe(Equipe),
+                                                                        checkRRT(Requested, Equipe, Needy),
+                                                                        (
+                                                                            Needy == [] ->
+                                                                                load_rrt(Requested, Equipe, NewEquipe),
+                                                                                retractall(ward_equipe(_)),
+                                                                                assertz(ward_equipe(NewEquipe)),
+                                                                                my_instance_name(From),
+                                                                                messageA('HRCoordinator_instance',send_message(human_resource_lending(Patient,Ward),From))
+                                                                        ).
 
 
 print_map([]).

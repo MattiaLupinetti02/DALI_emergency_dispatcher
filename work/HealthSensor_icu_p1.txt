@@ -74,16 +74,20 @@ final_config_output :- config(A),A == 0, p_name(Pname), Pname \= 'None', ward(Wn
 final_config_outputI :> write('End configuration').
 
 
+
 trashold_hr(180).
 
 trashold_o(89).
 
+:- dynamic patient_taken_in_charge/1.
+patient_taken_in_charge(0).
 
 new_hrE(Patient,HR) :> critical_hr_out(Patient,HR).
 new_ooE(Patient,OO) :> critical_oo_out(Patient,OO).
 
 
-critical_hr_out(Patient,HR) :-  trashold_hr(V), HR >= V,  write(Patient), write(' has a high hr: '), write(HR),nl,
+critical_hr_out(Patient,HR) :-  patient_taken_in_charge(B), B == 0,
+                                trashold_hr(V), HR >= V,  write(Patient), write(' has a high hr: '), write(HR),nl,
                                 ward(WardName), config(A), A == 1, p_name(Pname),
                                 atom_concat('Ward_', WardName, InstanceWardName),
                                 my_instance_name(InstanceName),
@@ -93,7 +97,8 @@ critical_hr_out(Patient,HR) :-  trashold_hr(V), HR >= V,  write(Patient), write(
 
 
 
-critical_oo_out(Patient,OO) :-  trashold_o(V), V > OO, write(Patient), write(' has a low SpO2: '), write(OO),nl,
+critical_oo_out(Patient,OO) :-  patient_taken_in_charge(B), B == 0,
+                                trashold_o(V), V > OO, write(Patient), write(' has a low SpO2: '), write(OO),nl,
                                 ward(WardName),config(A), A == 1 ,p_name(Pname),
                                 atom_concat('Ward_', WardName, InstanceWardName),
                                 my_instance_name(InstanceName),
@@ -101,3 +106,4 @@ critical_oo_out(Patient,OO) :-  trashold_o(V), V > OO, write(Patient), write(' h
                                 write('to: '), write(InstanceWardName),nl,
                                 messageA(InstanceWardName,send_message(alarm('low_o2',WardName,Pname),InstanceName)).
 
+taking_charge_emergencyE :> write('Stop sending: emergy handled'),nl, retractall(patient_taken_in_charge(_)), patient_taken_in_charge(1).

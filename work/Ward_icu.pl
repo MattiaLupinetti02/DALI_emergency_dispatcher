@@ -29,7 +29,7 @@ read_wards:-equipe_read(var_A),var_A=:=0,my_ward_name(var_Name).
 
 read_loop(var_Stream):-read(var_Stream,var_Termine),(var_Termine==end_of_file->true;var_Termine=reparto(var_NomeReparto,var_Lista),(my_ward_name(var_Ward),var_NomeReparto==var_Ward->assertz(my_ward_equipe(var_Lista));true),read_loop(var_Stream)).
 
-equipe_staff(['nurses','doctors','resuscitators']).
+equipe_staff(['Nurses','Doctors','Resuscitators']).
 
 evi(make_ward):-ward_equipe(var_Map),write('ward equipe setted:'),write(var_Map),nl,my_ward_name(var_Ward),write('ward name: '),write(var_Ward),nl,my_instance_name(var_Name),write('Instance name: '),write(var_Name),nl,write('end configuration'),nl.
 
@@ -41,33 +41,49 @@ make_equipe([],[],[]).
 
 :-dynamic urgency/3.
 
-:-dynamic rrt/1.
+:-dynamic rrt_assigned/1.
 
 rrt([]).
 
-rrt_format(['nurses'-2,'doctors'-1,'resuscitators'-1]).
+rrt_format(['Nurses'-2,'Doctors'-1,'Resuscitators'-1]).
 
 eve(alarm(var_TP,var_WR,var_PT)):-config(var_A),var_A=:=1,a(def_urgency(var_TP,var_WR,var_PT)).
 
 a(def_urgency(var_TP,var_WR,var_PT)):-(retract(urgency(var_TP,var_WR,var_PT))->true;true),assertz(urgency(var_TP,var_WR,var_PT)).
 
-tesg(checkRR([],[])).
+tesg(checkRR(var_RRT,var_Equipe,var_Needy)):-tesg(checkRR(var_RRT,var_Equipe,[],var_Needy)).
 
-tesg(checkRR([var_Key_f-var_Value_f|var_Tail_f],[var_Key_e-var_Value_e|var_Tail_e])):-var_Value_e>=var_Value_f,tesg(checkRR(var_Tail_f,var_Tail_e)).
+tesg(checkRR([],var__,var_Acc,var_Acc)).
 
-assign_rrt(var_Type,var_Ward,var_Patient):-config(var_A),var_A=:=1,findall(urgency(var_TP,var_WR,var_PT),urgency(var_TP,var_WR,var_PT),var_Lista),(var_Lista=[urgency(var_Type,var_Ward,var_Patient)|var__]->true;fail),rrt_format(var_Rrt_format_map),ward_equipe(var_Equipe_map),tesg(checkRR(var_Rrt_format_map,var_Equipe_map)).
+tesg(checkRR([var_Key-var_FVal|var_FT],var_Equipe,var_Acc,var_Needy)):-(member(var_Key-var_EVal,var_Equipe)->true;var_EVal=0),(var_EVal>=var_FVal->var_NewAcc=var_Acc;var_Missing is var_FVal-var_EVal,var_NewAcc=[var_Key-var_Missing|var_Acc]),tesg(checkRR(var_FT,var_Equipe,var_NewAcc,var_Needy)).
 
-evi(assign_rrt(var_Type,var_Ward,var_Patient)):-rrt_format(var_Rrt_format_map),ward_equipe(var_Equipe_map),load_rrt(var_Rrt_format_map,var_Equipe_map,var_NewEquipe),retractall(ward_equipe(var__)),assertz(ward_equipe(var_NewEquipe)),retractall(rrt(var__)),assertz(rrt(var_Patient)),write('Equipe updated: '),write(var_NewEquipe),nl,write('The assigned rrt is: '),write(var_Rrt_format_map),write(' to the patient '),write(var_Patient),nl.
+assign_rrt(var_Type,var_Ward,var_Patient):-config(1),urgency(var_Type,var_Ward,var_Patient).
+
+:-dynamic external_hr_request/1.
+
+external_hr_request([]).
+
+kv_to_need([],[]).
+
+kv_to_need([var_K-var_V|var_T],[need(var_K,var_V)|var_NT]):-kv_to_need(var_T,var_NT).
+
+evi(assign_rrt(var_Type,var_Ward,var_Patient)):-rrt_format(var_RRT),write(' RRT:'),write(var_RRT),nl,ward_equipe(var_Equipe),write(' Equipe:'),write(var_Equipe),nl,write(' Patient:'),write(var_Patient),nl,external_hr_request(var_Help_req_list),write(' Help_req_list:'),write(var_Help_req_list),nl,\+member(var_Patient,var_Help_req_list),tesg(checkRR(var_RRT,var_Equipe,var_NeedyMap)),write('NeedyMap = '),write(var_NeedyMap),nl,(var_NeedyMap==[]->load_rrt(var_RRT,var_Equipe,var_NewEquipe),retractall(ward_equipe(var__)),assertz(ward_equipe(var_NewEquipe)),retractall(rrt_assigned(var__)),assertz(rrt_assigned(var_Patient)),write('[OK] RRT assegnato al paziente '),write(var_Patient),nl;append(var_Help_req_list,[var_Patient],var_New_help_req_list),retract(external_hr_request(var_Help_req_list)),assertz(external_hr_request(var_New_help_req_list)),my_instance_name(var_Me),write('[WARN] Risorse insufficienti: '),kv_to_need(var_NeedyMap,var_NeedList),write(var_NeedList),get_value('Nurses',var_NeedyMap,0,var_N),get_value('Doctors',var_NeedyMap,0,var_D),get_value('Resuscitators',var_NeedyMap,0,var_R),write(var_N),write(var_D),write(var_R),a(message('HRCoordinator_instance',send_message(human_resource_request('Nurses',var_N,'Doctors',var_D,'Resuscitators',var_R,var_Me,var_Patient),var_Me)))).
+
+get_value(var_Chiave,var_ListaCoppie,var_Default,var_Valore):-member(var_Chiave-var_Valore,var_ListaCoppie)->true;var_Valore=var_Default.
 
 make_healthsensor_name(var_Patient,var_SensorName):-my_ward_name(var_Ward),atom_concat('HealthSensor_',var_Ward,var_A1),atom_concat(var_A1,'_',var_A2),atom_concat(var_A2,var_Patient,var_SensorName).
 
-taking_charge_emergency(var_Patient,var_SensorName):-my_ward_name(var_Ward),findall(rrt(var_P),rrt(var_P),var_Rrt_list),var_Rrt_list=[rrt(var_Patient)|var__],make_healthsensor_name(var_Patient,var_SensorName).
+taking_charge_emergency(var_Patient,var_Sensor):-rrt_assigned(var_Patient),make_healthsensor_name(var_Patient,var_Sensor).
 
-evi(taking_charge_emergency(var_Patient,var_SensorName)):-config(var_A),var_A=:=1,my_instance_name(var_AgentName),write('SensorName: '),write(var_SensorName),nl,a(message(var_SensorName,send_message('Takenincharge',var_AgentName))),retractall(urgency(var__,var__,var_Patient)),write('porcodio').
+evi(taking_charge_emergency(var_Patient,var_Sensor)):-urgency(var__,var__,var_Patient),my_instance_name(var_Me),write('Emergenza gestita per '),write(var_Patient),nl,a(message(var_Sensor,send_message(taking_charge_emergency,var_Me))),retractall(urgency(var__,var__,var_Patient)).
 
 load_rrt([],var_Equipe,var_Equipe).
 
-load_rrt([var_Key-var_RRTVal|var_T],var_Equipe,var_FinalEquipe):-select(var_Key-var_EquipeVal,var_Equipe,var_RestEquipe),var_NewVal is var_EquipeVal-var_RRTVal,var_NewEquipe=[var_Key-var_NewVal|var_RestEquipe],load_rrt(var_T,var_NewEquipe,var_FinalEquipe).
+load_rrt([var_Key-var_RRTVal|var_T],var_Equipe,var_FinalEquipe):-select(var_Key-var_EquipeVal,var_Equipe,var_Rest),var_NewVal is var_EquipeVal-var_RRTVal,load_rrt(var_T,[var_Key-var_NewVal|var_Rest],var_FinalEquipe).
+
+select_needy(var_List,var_Result):-findall(var_Key-var_Value,(member(var_Key-var_Value,var_List),var_Value>0),var_Result).
+
+eve(human_resource_request(var_Nurses,var_N,var_Doctors,var_D,var_Resuscitators,var_R,var_Ward,var_Patient)):-write('Received request of: '),write(var_Nurses),write(' '),write(var_N),nl,write(var_Doctors),write(' '),write(var_D),nl,write(var_Resuscitators),write(' '),write(var_R),nl,write('from the ward: '),write(var_Ward),nl,write('for the patient: '),write(var_Patient),nl,select_needy([var_Nurses-var_N,var_Doctors-var_D,var_Resuscitators-var_R],var_Requested),ward_equipe(var_Equipe),tesg(checkRR(var_Requested,var_Equipe,var_Needy)),(var_Needy==[]->load_rrt(var_Requested,var_Equipe,var_NewEquipe),retractall(ward_equipe(var__)),assertz(ward_equipe(var_NewEquipe)),my_instance_name(var_From),a(message('HRCoordinator_instance',send_message(human_resource_lending(var_Patient,var_Ward),var_From)))).
 
 print_map([]).
 
@@ -167,11 +183,11 @@ call_inform(var_X,var_Ag,var_T):-asse_cosa(past_event(inform(var_X,var_Ag),var_T
 
 call_refuse(var_X,var_Ag,var_T):-clause(agent(var_A),var__),asse_cosa(past_event(var_X,var_T)),statistics(walltime,[var_Tp,var__]),retractall(past(var_X,var__,var_Ag)),assert(past(var_X,var_Tp,var_Ag)),a(message(var_Ag,reply(received(var_X),var_A))).
 
-call_cfp(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_484263,var_Ontology,_484267),_484257),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_cfp(var_A,var_C,var_Ag,_484301)),a(message(var_Ag,propose(var_A,[_484301],var_AgI))),retractall(ext_agent(var_Ag,_484339,var_Ontology,_484343)).
+call_cfp(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_542161,var_Ontology,_542165),_542155),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_cfp(var_A,var_C,var_Ag,_542199)),a(message(var_Ag,propose(var_A,[_542199],var_AgI))),retractall(ext_agent(var_Ag,_542237,var_Ontology,_542241)).
 
-call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_484137,var_Ontology,_484141),_484131),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,accept_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_484207,var_Ontology,_484211)).
+call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_542035,var_Ontology,_542039),_542029),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,accept_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_542105,var_Ontology,_542109)).
 
-call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_484025,var_Ontology,_484029),_484019),not(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,reject_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_484081,var_Ontology,_484085)).
+call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_541923,var_Ontology,_541927),_541917),not(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,reject_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_541979,var_Ontology,_541983)).
 
 call_accept_proposal(var_A,var_Mp,var_Ag,var_T):-asse_cosa(past_event(accepted_proposal(var_A,var_Mp,var_Ag),var_T)),statistics(walltime,[var_Tp,var__]),retractall(past(accepted_proposal(var_A,var_Mp,var_Ag),var__,var_Ag)),assert(past(accepted_proposal(var_A,var_Mp,var_Ag),var_Tp,var_Ag)).
 
@@ -179,7 +195,7 @@ call_reject_proposal(var_A,var_Mp,var_Ag,var_T):-asse_cosa(past_event(rejected_p
 
 call_failure(var_A,var_M,var_Ag,var_T):-asse_cosa(past_event(failed_action(var_A,var_M,var_Ag),var_T)),statistics(walltime,[var_Tp,var__]),retractall(past(failed_action(var_A,var_M,var_Ag),var__,var_Ag)),assert(past(failed_action(var_A,var_M,var_Ag),var_Tp,var_Ag)).
 
-call_cancel(var_A,var_Ag):-if(clause(high_action(var_A,var_Te,var_Ag),_483589),retractall(high_action(var_A,var_Te,var_Ag)),true),if(clause(normal_action(var_A,var_Te,var_Ag),_483623),retractall(normal_action(var_A,var_Te,var_Ag)),true).
+call_cancel(var_A,var_Ag):-if(clause(high_action(var_A,var_Te,var_Ag),_541487),retractall(high_action(var_A,var_Te,var_Ag)),true),if(clause(normal_action(var_A,var_Te,var_Ag),_541521),retractall(normal_action(var_A,var_Te,var_Ag)),true).
 
 external_refused_action_propose(var_A,var_Ag):-clause(not_executable_action_propose(var_A,var_Ag),var__).
 
@@ -187,17 +203,17 @@ evi(external_refused_action_propose(var_A,var_Ag)):-clause(agent(var_Ai),var__),
 
 refused_message(var_AgM,var_Con):-clause(eliminated_message(var_AgM,var__,var__,var_Con,var__),var__).
 
-refused_message(var_To,var_M):-clause(eliminated_message(var_M,var_To,motivation(conditions_not_verified)),_483405).
+refused_message(var_To,var_M):-clause(eliminated_message(var_M,var_To,motivation(conditions_not_verified)),_541303).
 
 evi(refused_message(var_AgM,var_Con)):-clause(agent(var_Ai),var__),a(message(var_AgM,inform(var_Con,motivation(refused_message),var_Ai))),retractall(eliminated_message(var_AgM,var__,var__,var_Con,var__)),retractall(eliminated_message(var_Con,var_AgM,motivation(conditions_not_verified))).
 
-send_jasper_return_message(var_X,var_S,var_T,var_S0):-clause(agent(var_Ag),_483253),a(message(var_S,send_message(sent_rmi(var_X,var_T,var_S0),var_Ag))).
+send_jasper_return_message(var_X,var_S,var_T,var_S0):-clause(agent(var_Ag),_541151),a(message(var_S,send_message(sent_rmi(var_X,var_T,var_S0),var_Ag))).
 
-gest_learn(var_H):-clause(past(learn(var_H),var_T,var_U),_483201),learn_if(var_H,var_T,var_U).
+gest_learn(var_H):-clause(past(learn(var_H),var_T,var_U),_541099),learn_if(var_H,var_T,var_U).
 
-evi(gest_learn(var_H)):-retractall(past(learn(var_H),_483077,_483079)),clause(agente(_483099,_483101,_483103,var_S),_483095),name(var_S,var_N),append(var_L,[46,112,108],var_N),name(var_F,var_L),manage_lg(var_H,var_F),a(learned(var_H)).
+evi(gest_learn(var_H)):-retractall(past(learn(var_H),_540975,_540977)),clause(agente(_540997,_540999,_541001,var_S),_540993),name(var_S,var_N),append(var_L,[46,112,108],var_N),name(var_F,var_L),manage_lg(var_H,var_F),a(learned(var_H)).
 
-cllearn:-clause(agente(_482871,_482873,_482875,var_S),_482867),name(var_S,var_N),append(var_L,[46,112,108],var_N),append(var_L,[46,116,120,116],var_To),name(var_FI,var_To),open(var_FI,read,_482971,[]),repeat,read(_482971,var_T),arg(1,var_T,var_H),write(var_H),nl,var_T==end_of_file,!,close(_482971).
+cllearn:-clause(agente(_540769,_540771,_540773,var_S),_540765),name(var_S,var_N),append(var_L,[46,112,108],var_N),append(var_L,[46,116,120,116],var_To),name(var_FI,var_To),open(var_FI,read,_540869,[]),repeat,read(_540869,var_T),arg(1,var_T,var_H),write(var_H),nl,var_T==end_of_file,!,close(_540869).
 
 send_msg_learn(var_T,var_A,var_Ag):-a(message(var_Ag,confirm(learn(var_T),var_A))).
 
