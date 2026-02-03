@@ -36,7 +36,8 @@ human_resource_requestE(Nurses,N,Doctors,D,Resuscitators,R, From, Patient) :>
                                                                                 assertz(hr_requests(Requests)),
                                                                                 write(Requests),nl, send_req(Requests, From, Patient).
 send_req(Requests, From, Patient) :- 
-                                    ( member(From-Value, Requests), member(Patient-Requested_equipe, Value) ->
+                                    (   member(From-Value, Requests), 
+                                        member(Patient-Requested_equipe, Value) ->
                                         wards(Wards),
                                         write('nel ramo true di send_req'),nl, write(From),nl, write(Patient),nl,
                                         send_req_to_wards(Wards, Requested_equipe, From, Patient) 
@@ -61,4 +62,27 @@ send_req_to_wards([Ward | Tail], Request, From, Patient) :- ground(Request),
 
 get_value(Chiave, ListaCoppie, Default, Valore) :- (member(Chiave-Valore, ListaCoppie) -> true ; Valore = Default ). 
 
-human_resource_lendingE(Patient,From) :> write('ce l ho').
+human_resource_lendingE(Patient,Receiver_ward,Sender_Ward) :>   hr_requests(Requests),
+                                                                write('Old requests: '), write(Requests),nl,
+                                                                write(' Rec_Ward: '),write(Receiver_ward),nl,
+                                                                member(Receiver_ward-Value, Requests), 
+                                                                member(Patient-Requested_equipe, Value),
+                                                                write(Requested_equipe),
+                                                                get_value('Nurses',Requested_equipe,0,N),
+                                                                get_value('Doctors',Requested_equipe,0,D),
+                                                                get_value('Resuscitators',Requested_equipe,0,R),
+                                                                write('inviati'), write(' Patient: '),write(Patient),nl,
+                                                                write(' Rec_Ward2: '),write(Receiver_ward),nl,
+                                                                write(' Send_Ward: '), write(Sender_Ward),nl,
+                                                                write(' Nurses: '), write(N),nl,
+                                                                write(' Doctors: '), write(D),nl,
+                                                                write(' Resuscitators: '), write(R),nl,
+                                                                write(' Patient: '), write(Patient),nl,
+                                                                messageA(
+                                                                    Receiver_ward,
+                                                                    send_message(
+                                                                        human_resource_reply(N,D,R,Receiver_ward,Sender_Ward,Patient),
+                                                                        'HRCoordinator_instance')
+                                                                ).
+
+human_resource_restitutionE(N,D,R,Receiver_Ward,Sender_Ward) :> write('ricevuto human_resource_restitutionE(N,D,R,Receiver_Ward,Sender_Ward)').

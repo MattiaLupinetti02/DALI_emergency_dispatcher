@@ -1,1 +1,0 @@
-send_message(send_message(human_resource_request(Nurses,2,Doctors,0,Resuscitators,0,Ward_icu,p2),HRCoordinator_instance))

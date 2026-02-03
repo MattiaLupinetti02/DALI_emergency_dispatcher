@@ -37,7 +37,9 @@ send_req_to_wards([var_Ward|var_Tail],var_Request,var_From,var_Patient):-ground(
 
 get_value(var_Chiave,var_ListaCoppie,var_Default,var_Valore):-member(var_Chiave-var_Valore,var_ListaCoppie)->true;var_Valore=var_Default.
 
-eve(human_resource_lending(var_Patient,var_From)):-write('ce l ho').
+eve(human_resource_lending(var_Patient,var_Receiver_ward,var_Sender_Ward)):-hr_requests(var_Requests),write('Old requests: '),write(var_Requests),nl,write(' Rec_Ward: '),write(var_Receiver_ward),nl,member(var_Receiver_ward-var_Value,var_Requests),member(var_Patient-var_Requested_equipe,var_Value),write(var_Requested_equipe),get_value('Nurses',var_Requested_equipe,0,var_N),get_value('Doctors',var_Requested_equipe,0,var_D),get_value('Resuscitators',var_Requested_equipe,0,var_R),write('inviati'),write(' Patient: '),write(var_Patient),nl,write(' Rec_Ward2: '),write(var_Receiver_ward),nl,write(' Send_Ward: '),write(var_Sender_Ward),nl,write(' Nurses: '),write(var_N),nl,write(' Doctors: '),write(var_D),nl,write(' Resuscitators: '),write(var_R),nl,write(' Patient: '),write(var_Patient),nl,a(message(var_Receiver_ward,send_message(human_resource_reply(var_N,var_D,var_R,var_Receiver_ward,var_Sender_Ward,var_Patient),'HRCoordinator_instance'))).
+
+eve(human_resource_restitution(var_N,var_D,var_R,var_Receiver_Ward,var_Sender_Ward)):-write('ricevuto human_resource_restitutionE(N,D,R,Receiver_Ward,Sender_Ward)').
 
 :-dynamic receive/1.
 
@@ -129,11 +131,11 @@ call_inform(var_X,var_Ag,var_T):-asse_cosa(past_event(inform(var_X,var_Ag),var_T
 
 call_refuse(var_X,var_Ag,var_T):-clause(agent(var_A),var__),asse_cosa(past_event(var_X,var_T)),statistics(walltime,[var_Tp,var__]),retractall(past(var_X,var__,var_Ag)),assert(past(var_X,var_Tp,var_Ag)),a(message(var_Ag,reply(received(var_X),var_A))).
 
-call_cfp(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_414179,var_Ontology,_414183),_414173),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_cfp(var_A,var_C,var_Ag,_414217)),a(message(var_Ag,propose(var_A,[_414217],var_AgI))),retractall(ext_agent(var_Ag,_414255,var_Ontology,_414259)).
+call_cfp(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_413677,var_Ontology,_413681),_413671),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_cfp(var_A,var_C,var_Ag,_413715)),a(message(var_Ag,propose(var_A,[_413715],var_AgI))),retractall(ext_agent(var_Ag,_413753,var_Ontology,_413757)).
 
-call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_414053,var_Ontology,_414057),_414047),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,accept_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_414123,var_Ontology,_414127)).
+call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_413551,var_Ontology,_413555),_413545),asserisci_ontologia(var_Ag,var_Ontology,var_A),once(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,accept_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_413621,var_Ontology,_413625)).
 
-call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_413941,var_Ontology,_413945),_413935),not(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,reject_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_413997,var_Ontology,_414001)).
+call_propose(var_A,var_C,var_Ag):-clause(agent(var_AgI),var__),clause(ext_agent(var_Ag,_413439,var_Ontology,_413443),_413433),not(call_meta_execute_propose(var_A,var_C,var_Ag)),a(message(var_Ag,reject_proposal(var_A,[],var_AgI))),retractall(ext_agent(var_Ag,_413495,var_Ontology,_413499)).
 
 call_accept_proposal(var_A,var_Mp,var_Ag,var_T):-asse_cosa(past_event(accepted_proposal(var_A,var_Mp,var_Ag),var_T)),statistics(walltime,[var_Tp,var__]),retractall(past(accepted_proposal(var_A,var_Mp,var_Ag),var__,var_Ag)),assert(past(accepted_proposal(var_A,var_Mp,var_Ag),var_Tp,var_Ag)).
 
@@ -141,7 +143,7 @@ call_reject_proposal(var_A,var_Mp,var_Ag,var_T):-asse_cosa(past_event(rejected_p
 
 call_failure(var_A,var_M,var_Ag,var_T):-asse_cosa(past_event(failed_action(var_A,var_M,var_Ag),var_T)),statistics(walltime,[var_Tp,var__]),retractall(past(failed_action(var_A,var_M,var_Ag),var__,var_Ag)),assert(past(failed_action(var_A,var_M,var_Ag),var_Tp,var_Ag)).
 
-call_cancel(var_A,var_Ag):-if(clause(high_action(var_A,var_Te,var_Ag),_413505),retractall(high_action(var_A,var_Te,var_Ag)),true),if(clause(normal_action(var_A,var_Te,var_Ag),_413539),retractall(normal_action(var_A,var_Te,var_Ag)),true).
+call_cancel(var_A,var_Ag):-if(clause(high_action(var_A,var_Te,var_Ag),_413003),retractall(high_action(var_A,var_Te,var_Ag)),true),if(clause(normal_action(var_A,var_Te,var_Ag),_413037),retractall(normal_action(var_A,var_Te,var_Ag)),true).
 
 external_refused_action_propose(var_A,var_Ag):-clause(not_executable_action_propose(var_A,var_Ag),var__).
 
@@ -149,31 +151,19 @@ evi(external_refused_action_propose(var_A,var_Ag)):-clause(agent(var_Ai),var__),
 
 refused_message(var_AgM,var_Con):-clause(eliminated_message(var_AgM,var__,var__,var_Con,var__),var__).
 
-refused_message(var_To,var_M):-clause(eliminated_message(var_M,var_To,motivation(conditions_not_verified)),_413321).
+refused_message(var_To,var_M):-clause(eliminated_message(var_M,var_To,motivation(conditions_not_verified)),_412819).
 
 evi(refused_message(var_AgM,var_Con)):-clause(agent(var_Ai),var__),a(message(var_AgM,inform(var_Con,motivation(refused_message),var_Ai))),retractall(eliminated_message(var_AgM,var__,var__,var_Con,var__)),retractall(eliminated_message(var_Con,var_AgM,motivation(conditions_not_verified))).
 
-send_jasper_return_message(var_X,var_S,var_T,var_S0):-clause(agent(var_Ag),_413169),a(message(var_S,send_message(sent_rmi(var_X,var_T,var_S0),var_Ag))).
+send_jasper_return_message(var_X,var_S,var_T,var_S0):-clause(agent(var_Ag),_412667),a(message(var_S,send_message(sent_rmi(var_X,var_T,var_S0),var_Ag))).
 
-gest_learn(var_H):-clause(past(learn(var_H),var_T,var_U),_413117),learn_if(var_H,var_T,var_U).
+gest_learn(var_H):-clause(past(learn(var_H),var_T,var_U),_412615),learn_if(var_H,var_T,var_U).
 
-evi(gest_learn(var_H)):-retractall(past(learn(var_H),_412993,_412995)),clause(agente(_413015,_413017,_413019,var_S),_413011),name(var_S,var_N),append(var_L,[46,112,108],var_N),name(var_F,var_L),manage_lg(var_H,var_F),a(learned(var_H)).
+evi(gest_learn(var_H)):-retractall(past(learn(var_H),_412491,_412493)),clause(agente(_412513,_412515,_412517,var_S),_412509),name(var_S,var_N),append(var_L,[46,112,108],var_N),name(var_F,var_L),manage_lg(var_H,var_F),a(learned(var_H)).
 
-cllearn:-clause(agente(_412787,_412789,_412791,var_S),_412783),name(var_S,var_N),append(var_L,[46,112,108],var_N),append(var_L,[46,116,120,116],var_To),name(var_FI,var_To),open(var_FI,read,_412887,[]),repeat,read(_412887,var_T),arg(1,var_T,var_H),write(var_H),nl,var_T==end_of_file,!,close(_412887).
+cllearn:-clause(agente(_412285,_412287,_412289,var_S),_412281),name(var_S,var_N),append(var_L,[46,112,108],var_N),append(var_L,[46,116,120,116],var_To),name(var_FI,var_To),open(var_FI,read,_412385,[]),repeat,read(_412385,var_T),arg(1,var_T,var_H),write(var_H),nl,var_T==end_of_file,!,close(_412385).
 
 send_msg_learn(var_T,var_A,var_Ag):-a(message(var_Ag,confirm(learn(var_T),var_A))).
-
-allowed_sender_sensor(['HealthSensor_icu_p1','HealthSensor_icu_p2']).
-
-allowed_receiver_sensor(['Ward_icu']).
-
-tell(var_From,var_To,send_message(var_M)):-allowed_receiver_sensor(var_List_a),allowed_sender_sensor(var_List_b),memberchk(var_To,var_List_a),memberchk(var_From,var_List_b).
-
-allowed_sender_simulator(['ValuesSimulator']).
-
-allowed_receiver_simulator(['HealthSensor_icu_p1','HealthSensor_icu_p2']).
-
-tell(var_From,var_To,send_message(var_M)):-allowed_receiver_simulator(var_List_a),allowed_sender_simulator(var_List_b),memberchk(var_To,var_List_a),memberchk(var_From,var_List_b).
 
 told(var_From,send_message(var_M)):-true.
 

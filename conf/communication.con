@@ -1,15 +1,3 @@
-allowed_sender_sensor(['HealthSensor_icu_p1','HealthSensor_icu_p2']).
-
-allowed_receiver_sensor(['Ward_icu']).
-
-tell(From,To, send_message(M)) :-allowed_receiver_sensor(List_a),allowed_sender_sensor(List_b),memberchk(To, List_a),memberchk(From, List_b).
-
-
-allowed_sender_simulator(['ValuesSimulator']).
-
-allowed_receiver_simulator(['HealthSensor_icu_p1','HealthSensor_icu_p2']).
-
-tell(From,To, send_message(M)) :- allowed_receiver_simulator(List_a), allowed_sender_simulator(List_b), memberchk(To, List_a), memberchk(From, List_b).
 
 
 
