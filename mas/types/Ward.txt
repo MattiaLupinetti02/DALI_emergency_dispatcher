@@ -110,9 +110,13 @@ rrt_format(['Nurses'-2,'Doctors'-1,'Resuscitators'-1]).
 
 alarmE(TP, WR, PT) :>
 	config(A), A=:=1,
-	def_urgencyA(TP, WR, PT).
+    
+    \+ urgency(_,_,PT),
+    write('New urgency from: '), write(WR), write(' by patient: '), write(PT),nl,
+    def_urgencyA(TP, WR, PT).
 
 def_urgencyA(TP,WR, PT) :>
+
 	(retract(urgency(TP,WR,PT)) -> true; true),
 	assertz(urgency(TP,WR,PT)).
 
@@ -166,14 +170,15 @@ assign_rrtI(Type, Ward, Patient) :>
             assertz(ward_equipe(NewEquipe)),
             assertz(rrt_assigned(Patient)),
             write('[OK] RRT assegnato al paziente: '),
-            write(Patient), nl
+            write(Patient), nl,
+            write('available staff: '), write(NewEquipe),nl
         )
     ;   (
             assertz(waiting_hr(Patient)),
             my_instance_name(Me),
             write('[WARN] Risorse insufficienti: '),
             kv_to_need(NeedyMap, NeedList),
-            write(NeedList),
+            write(NeedList),nl,
             append(Help_req_list, [Patient-NeedyMap],New_help_req_list),
             retract(external_hr_request(Help_req_list)),
             assertz(external_hr_request(New_help_req_list)),
@@ -187,7 +192,7 @@ assign_rrtI(Type, Ward, Patient) :>
             
         )
         
-    ),retractall(urgency(_,_,Patient)).
+    ).
 
 get_value(Chiave, ListaCoppie, Default, Valore) :-
     (member(Chiave-Valore, ListaCoppie) ->
@@ -204,43 +209,106 @@ make_healthsensor_name(Patient, SensorName) :-
     atom_concat(A1, '_', A2),
     atom_concat(A2, Patient, SensorName).
 
-
-
+:- dynamic emergency_timer/2.
 
 taking_charge_emergency(Patient, Sensor) :-
     rrt_assigned(Patient),
     \+waiting_hr(Patient),
+    \+emergency_timer(Patient,_),
     make_healthsensor_name(Patient, Sensor).
 
- taking_charge_emergencyI(Patient, Sensor) :>
 
-    my_instance_name(Me),
+taking_charge_emergencyI(Patient, Sensor) :>
+    write('=== taking_charge_emergencyI START ==='), nl,
+    write('Patient: '), write(Patient), nl,
+    write('Sensor: '), write(Sensor), nl,
+    my_instance_name(Instance),
+    write('Notifying sensor that patient is taken in charge...'), nl,
+     messageA(
+        Sensor,
+        send_message(taking_charge_emergency, Instance)
+    ),
+    retractall(emergency_timer(Patient,_)),
+    assertz(emergency_timer(Patient,10)),
+    write('[TIMER STARTED] 10 ticks for patient '),
+    write(Patient), nl,
+    write('=== taking_charge_emergencyI END ==='), nl.
+
+
+tick(Patient,T) :- emergency_timer(Patient,T), ground(Patient), ground(T).
+
+tickI(Patient,T):>
+    
+    write('[TICK] Patient '), write(Patient),
+    write(' remaining: '), write(T), nl,
+    (
+        T > 1 ->
+            T1 is T - 1,
+            retractall(emergency_timer(Patient,_)),
+            assertz(emergency_timer(Patient,T1))
+        ;
+            retractall(emergency_timer(Patient,_)),
+            write('[END EMERGENCY TRIGGER] Patient '),
+            write(Patient), nl,
+            rrt_assigned(Patient),
+            end_emergencyA(Patient)
+    ).
+
+
+
+
+
+end_emergencyA(Patient) :-
+    write('[END EMERGENCY] Releasing RRT for patient '),
+    write(Patient), nl,
 
     external_hr_request(Help_req_list),
-           
-    (member(Patient-List,Help_req_list) ->
+    (
+        member(Patient-List,Help_req_list) ->
+            write('[RELEASE FROM EXTERNAL HR]'), nl,
+            
+            ward_equipe(Equipe),
+            write('Equipe: '),write(Equipe),nl,
             rrt_format(Format),
             map_diff(Format,List,Old_equipe),
+            write('equipe before rrt release: '), write(List),nl,
+            map_sum(Equipe,Old_equipe,NewEquipe),
             retractall(ward_equipe(_)),
-            assertz(ward_equipe(Old_equipe)),
-            select(Patient-List,Help_req_list,New_help_req_list)
+            assertz(ward_equipe(NewEquipe)),
+            write('equipe after rrt release: '), write(NewEquipe),nl,
+
+
+            write('Help_req_list before rrt release: '),write(Help_req_list),nl,
+            select(Patient-List,Help_req_list,New_help_req_list),
+            retract(external_hr_request(Help_req_list)),
+            assertz(external_hr_request(New_help_req_list)),
+            write('Help_req_list after rrt release: '),write(New_help_req_list),nl
         ;
+            write('[RELEASE INTERNAL RRT]'), nl,
             rrt_format(Format),
             ward_equipe(Equipe),
+            write('equipe before rrt release: '), write(Equipe),nl,
             map_sum(Format,Equipe,Old_equipe),
-            write('per il paziente: '),write(Patient),write('prima c era: '), write(Equipe),write(' ora '), write(Old_equipe),nl,
             retractall(ward_equipe(_)),
-            assertz(ward_equipe(Old_equipe))
-        ),
+            assertz(ward_equipe(Old_equipe)),
+            write('equipe after rrt release: '), write(Old_equipe),nl
+    ),
+
     retractall(rrt_assigned(Patient)),
-    write('Handled emergency for patient: '), write(Patient), nl.
+    write('[RRT RELEASED] Patient '),
+    write(Patient), nl,retractall(urgency(_,_,Patient)).
 
 
-map_diff([], [], []).
 
-map_diff([K-V1 | T1], [K-V2 | T2], [K-D | TD]) :-
+
+
+map_diff([], _, []).
+
+map_diff([K-V1 | T], List2, [K-D | TD]) :-
+    ( member(K-V2, List2) -> true ; V2 = 0 ),
     D is V1 - V2,
-    map_diff(T1, T2, TD).
+    map_diff(T, List2, TD).
+
 
 map_sum([], _, []).
 map_sum([K-V1 | T], Equipe, [K-D | TD]) :-
