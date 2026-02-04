@@ -217,6 +217,7 @@ taking_charge_emergency(Patient, Sensor) :-
     \+emergency_timer(Patient,_),
     make_healthsensor_name(Patient, Sensor).
 
+random_time(R) :- random(NUM), R is integer(NUM *10).
 
 taking_charge_emergencyI(Patient, Sensor) :>
     write('=== taking_charge_emergencyI START ==='), nl,
@@ -229,8 +230,9 @@ taking_charge_emergencyI(Patient, Sensor) :>
         send_message(taking_charge_emergency, Instance)
     ),
     retractall(emergency_timer(Patient,_)),
-    assertz(emergency_timer(Patient,10)),
-    write('[TIMER STARTED] 10 ticks for patient '),
+    random_time(T),
+    assertz(emergency_timer(Patient,T)),
+    write('[TIMER STARTED] '),write(T),write(' ticks for patient '),
     write(Patient), nl,
     write('=== taking_charge_emergencyI END ==='), nl.
 
@@ -255,7 +257,7 @@ tickI(Patient,T):>
     ).
 
 
-
+:- dynamic to_restore/6.
 
 
 end_emergencyA(Patient) :-
@@ -293,10 +295,19 @@ end_emergencyA(Patient) :-
             assertz(ward_equipe(Old_equipe)),
             write('equipe after rrt release: '), write(Old_equipe),nl
     ),
-
+    
     retractall(rrt_assigned(Patient)),
     write('[RRT RELEASED] Patient '),
-    write(Patient), nl,retractall(urgency(_,_,Patient)).
+    write(Patient), nl,urgency(Type,Ward,Patient),
+    make_healthsensor_name(Patient,SensorName),
+    write(SensorName),nl,
+    my_instance_name(My_ward_name),
+    messageA(SensorName,send_message(emergency_handled,My_ward_name)),
+    write('porcodio'),nl,
+    retractall(urgency(_,_,Patient)),
+    to_restore(N,D,R,Patient,Receiver_Ward,Sender_Ward),
+    messageA('HRCoordinator_instance',send_message(human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward),Receiver_Ward)),
+    retractall(to_restore(N,D,R,Patient,Receiver_Ward,Sender_Ward)).
 
 
 
@@ -379,8 +390,14 @@ human_resource_replyE(N,D,R,Receiver_Ward,Sender_Ward,Patient) :>
                                                                     retractall(ward_equipe(_)),
                                                                     assertz(ward_equipe(NewEquipe)),
                                                                     assertz(rrt_assigned(Patient)),
-                                                                    messageA('HRCoordinator_instance',send_message(human_resource_restitution(N,D,R,Receiver_Ward,Sender_Ward),Receiver_Ward)),
-                                                                    nl,write('qua'),nl.
+                                                                    assertz(to_restore(N,D,R,Patient,Receiver_Ward,Sender_Ward)),
+                                                                    nl,write('received extra HR'),nl.
+
+human_resource_restore_wardE(N,D,R) :>  To_restore = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
+                                        ward_equipe(Old_equipe),
+                                        map_sum(To_restore,Old_equipe,Equipe),
+                                        write(Equipe).
+
 
 print_map([]).
 print_map([K-V | T]) :>

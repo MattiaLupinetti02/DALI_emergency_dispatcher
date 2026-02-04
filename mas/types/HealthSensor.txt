@@ -106,4 +106,6 @@ critical_oo_out(Patient,OO) :-  patient_taken_in_charge(B), B == 0,
                                 write('to: '), write(InstanceWardName),nl,
                                 messageA(InstanceWardName,send_message(alarm('low_o2',WardName,Pname),InstanceName)).
 
-taking_charge_emergencyE :> write('Stop sending: emergy handled'),nl, retractall(patient_taken_in_charge(_)), patient_taken_in_charge(1).
+taking_charge_emergencyE :> write('Stop sending: emergy handled'),nl, retractall(patient_taken_in_charge(_)), assertz(patient_taken_in_charge(1)).
+
+emergency_handledE :> ward(Ward_name),  format('Emergency handled by ward ~w~n', [Ward_name]),retractall(patient_taken_in_charge(_)), assertz(patient_taken_in_charge(0)).

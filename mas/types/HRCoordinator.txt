@@ -85,4 +85,15 @@ human_resource_lendingE(Patient,Receiver_ward,Sender_Ward) :>   hr_requests(Requ
                                                                         'HRCoordinator_instance')
                                                                 ).
 
-human_resource_restitutionE(N,D,R,Receiver_Ward,Sender_Ward) :> write('ricevuto human_resource_restitutionE(N,D,R,Receiver_Ward,Sender_Ward)').
+human_resource_restitutionE(N,D,R,Patient,Receiver_Ward,Sender_Ward) :> format(
+                                                                                'Nurses=~w Doctors=~w Resuscitators=~w Patient=~w Receiver=~w Sender=~w~n',
+                                                                                [N, D, R, Patient, Receiver_Ward, Sender_Ward]
+                                                                            ),
+                                                                        hr_requests(Req),
+                                                                        write(Req),nl,
+                                                                        member(Receiver_Ward-Ward_receiver_map, Req),
+                                                                        select(Patient-_,Ward_receiver_map,New_req_list),
+                                                                        retractall(hr_requests(Req)),
+                                                                        assertz(hr_requests(New_req_list)),
+                                                                        write(New_req_list),
+                                                                        messageA(Sender_Ward,send_message(human_resource_restore_ward(N,D,R), 'HRCoordinator_instance')).
