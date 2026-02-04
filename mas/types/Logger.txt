@@ -1,0 +1,45 @@
+:- use_module(library(system)).
+:- use_module(library(lists)).
+
+:- dynamic log_file/1.
+log_file('log.txt').
+
+loggerE(Text, Sender) :-
+    log_file(File),
+    open(File, append, Stream),
+    
+    def_timestamp(TimeStamp),
+
+    format(Stream,
+           '[~w] [~w] ~w~n',
+           [TimeStamp, Sender, Text]),
+    close(Stream).
+
+format_number(N, Formatted) :-
+    number_chars(N, Chars),
+    (N < 10 -> 
+        atom_chars(Formatted, ['0'|Chars])
+    ; 
+        atom_chars(Formatted, Chars)
+    ).
+
+def_timestamp(TimeStamp) :-
+    datime(datime(Y,M,D,H,Min,S)),
+    format_number(Y, YF),
+    format_number(M, MF),
+    format_number(D, DF),
+    format_number(H, HF),
+    format_number(Min, MinF),
+    format_number(S, SF),
+    
+
+    atom_concat(YF, '-', T1),
+    atom_concat(T1, MF, T2),
+    atom_concat(T2, '-', T3),
+    atom_concat(T3, DF, T4),
+    atom_concat(T4, ' ', T5),
+    atom_concat(T5, HF, T6),
+    atom_concat(T6, ':', T7),
+    atom_concat(T7, MinF, T8),
+    atom_concat(T8, ':', T9),
+    atom_concat(T9, SF, TimeStamp).

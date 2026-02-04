@@ -81,7 +81,9 @@ make_wardI :>
     write('ward equipe setted:'),write(Map) , nl,
 	my_ward_name(Ward), write('ward name: '), write(Ward), nl,
 	my_instance_name(Name), write('Instance name: '), write(Name), nl,
-	write('end configuration'),nl .
+	write('end configuration'),nl,
+    messageA('Logger',
+        send_message(logger('End_ward_configuration',Name), Ward)).
 
 
 make_ward :-my_ward_name(Name),
@@ -192,7 +194,10 @@ assign_rrtI(Type, Ward, Patient) :>
             
         )
         
-    ).
+    ),
+    my_instance_name(Name),
+    messageA('Logger',
+        send_message(logger('Starting_assign_rrt_operation',Name), Name)).
 
 get_value(Chiave, ListaCoppie, Default, Valore) :-
     (member(Chiave-Valore, ListaCoppie) ->
@@ -234,7 +239,9 @@ taking_charge_emergencyI(Patient, Sensor) :>
     assertz(emergency_timer(Patient,T)),
     write('[TIMER STARTED] '),write(T),write(' ticks for patient '),
     write(Patient), nl,
-    write('=== taking_charge_emergencyI END ==='), nl.
+    write('=== taking_charge_emergencyI END ==='), nl,
+    messageA('Logger',
+        send_message(logger('Emergency_taken_in_charge',Instance), Instance)).
 
 
 tick(Patient,T) :- emergency_timer(Patient,T), ground(Patient), ground(T).
@@ -303,8 +310,10 @@ end_emergencyA(Patient) :-
     write(SensorName),nl,
     my_instance_name(My_ward_name),
     messageA(SensorName,send_message(emergency_handled,My_ward_name)),
-    write('porcodio'),nl,
     retractall(urgency(_,_,Patient)),
+    my_instance_name(Name),
+    messageA('Logger',
+        send_message(logger('Emergency_end',Name), Name)),
     to_restore(N,D,R,Patient,Receiver_Ward,Sender_Ward),
     messageA('HRCoordinator_instance',send_message(human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward),Receiver_Ward)),
     retractall(to_restore(N,D,R,Patient,Receiver_Ward,Sender_Ward)).
@@ -365,7 +374,10 @@ human_resource_requestE(Nurses,N,Doctors,D,Resuscitators,R,Rec_Ward,Patient) :>
 
                                                                         lended_hr(Old), append(old,[Ward], New),
                                                                         retractall(lended_hr(hr_requests)),
-                                                                        assertz(lended_hr(New)).
+                                                                        assertz(lended_hr(New)),                                                                        
+                                                                        my_instance_name(Name),
+                                                                        messageA('Logger',
+                                                                            send_message(logger('HR_request_received',Name), Name)).
 add_external_equipe([]).
 add_external_equipe([Hr-Num | Tail]) :- ward_equipe(Equipe),
                                         member(Hr-Val,Equipe),
@@ -391,12 +403,19 @@ human_resource_replyE(N,D,R,Receiver_Ward,Sender_Ward,Patient) :>
                                                                     assertz(ward_equipe(NewEquipe)),
                                                                     assertz(rrt_assigned(Patient)),
                                                                     assertz(to_restore(N,D,R,Patient,Receiver_Ward,Sender_Ward)),
-                                                                    nl,write('received extra HR'),nl.
+                                                                    nl,write('received extra HR'),nl,                            
+                                                                    my_instance_name(Name),
+                                                                    messageA('Logger',
+                                                                        send_message(logger('External_HR_received',Name), Name)).
 
-human_resource_restore_wardE(N,D,R) :>  To_restore = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
+human_resource_restore_wardE(N,D,R) :>  
+                                        To_restore = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
                                         ward_equipe(Old_equipe),
                                         map_sum(To_restore,Old_equipe,Equipe),
-                                        write(Equipe).
+                                        write(Equipe),
+                                        my_instance_name(Name),
+                                        messageA('Logger',
+                                            send_message(logger('HR_restored',Name), Name)).
 
 
 print_map([]).
