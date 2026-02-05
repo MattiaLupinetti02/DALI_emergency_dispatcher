@@ -6,7 +6,14 @@ config(0).
 equipe_read(0).
 met(0).
 wards([]).
-read_wardsI :> open('reparti', read, Stream), read_loop(Stream), close(Stream), retractall(equipe_read(_)), assertz(equipe_read(1)), wards(WardsList),write(WardsList),nl.
+read_wardsI :>  open('reparti', read, Stream), 
+                read_loop(Stream),
+                close(Stream),
+                retractall(equipe_read(_)),
+                assertz(equipe_read(1)),
+                wards(WardsList),
+                write('Ward list:'),
+                write(WardsList),nl.
 
 read_wards :- equipe_read(A), A == 0. read_loop(Stream) :- 
                                                             read(Stream, Termine),
@@ -35,12 +42,14 @@ human_resource_requestE(Nurses,N,Doctors,D,Resuscitators,R, From, Patient) :>
                                                                                 retractall(hr_requests(_)),
                                                                                 assertz(hr_requests(Requests)),
                                                                                 send_req(Requests, From, Patient),
-                                                                                assertz(emergency_timer(From,Patient,10)), write('timer setted'),nl.
+                                                                                assertz(emergency_timer(From,Patient,10)),
+                                                                                write('Request timeout started for HR: '),write(List),
+                                                                                write('for the patient: '),write(Patient),write(' from the ward: '),
+                                                                                write(From),nl.
 send_req(Requests, From, Patient) :- 
                                     (   member(From-Value, Requests), 
                                         member(Patient-Requested_equipe, Value) ->
                                         wards(Wards),
-                                        write('nel ramo true di send_req'),nl, write(From),nl, write(Patient),nl,
                                         send_req_to_wards(Wards, Requested_equipe, From, Patient) 
                                         ;true 
                                     ). 
@@ -55,7 +64,7 @@ send_req_to_wards([Ward | Tail], Request, From, Patient) :- ground(Request),
                                                                 ;   get_value('Nurses',Request,0,N),
                                                                     get_value('Doctors',Request,0,D),
                                                                     get_value('Resuscitators',Request,0,R),
-                                                                    write(Dest),
+                                                                    write('Sending HR request to: '),write(Dest),nl,
                                                                     messageA(
                                                                                 Dest,
                                                                                 send_message( human_resource_request('Nurses',N,'Doctors',D,'Resuscitators',R, From, Patient),
@@ -65,7 +74,10 @@ send_req_to_wards([Ward | Tail], Request, From, Patient) :- ground(Request),
 
 :- dynamic emergency_timer/3.
 
-tick(Requests, From, Patient,T) :- emergency_timer(From,Patient,T),hr_requests(Requests), member(From-Value,Requests), member(Patient-Req,Value).
+tick(Requests, From, Patient,T) :-  emergency_timer(From,Patient,T),
+                                    hr_requests(Requests),
+                                    member(From-Value,Requests),
+                                    member(Patient-Req,Value).
 
 tickI(Requests, From, Patient,T):>
     
@@ -78,11 +90,9 @@ tickI(Requests, From, Patient,T):>
             assertz(emergency_timer(From,Patient,T1))
         ;
             retractall(emergency_timer(From,Patient,_)),
-            write('[END EMERGENCY TRIGGER] Patient '),
+            write('[END TIMEOUT HR REQUEST] for the patient: '),
             write(Patient), nl,
-            send_req(Requests, From, Patient),
-            write('la richiesta c e ancora :'),nl,
-            write(Requests)
+            send_req(Requests, From, Patient)
     ).
 
 
@@ -91,21 +101,12 @@ get_value(Chiave, ListaCoppie, Default, Valore) :- (member(Chiave-Valore, ListaC
 human_resource_lendingE(Patient,Receiver_Ward,Sender_Ward) :>   
                                                                 retractall(emergency_timer(Receiver_Ward,Patient,_)),
                                                                 hr_requests(Requests),
-                                                                write('Old requests: '), write(Requests),nl,
-                                                                write(' Rec_Ward: '),write(Receiver_Ward),nl,
                                                                 member(Receiver_Ward-Value, Requests), 
                                                                 member(Patient-Requested_equipe, Value),
-                                                                write(Requested_equipe),
+                                                                write('=====HR lended by Ward: '),write(Sender_Ward),write(' to '),write(Receiver_Ward),write('====='),nl,
                                                                 get_value('Nurses',Requested_equipe,0,N),
                                                                 get_value('Doctors',Requested_equipe,0,D),
                                                                 get_value('Resuscitators',Requested_equipe,0,R),
-                                                                write('inviati'), write(' Patient: '),write(Patient),nl,
-                                                                write(' Rec_Ward2: '),write(Receiver_Ward),nl,
-                                                                write(' Send_Ward: '), write(Sender_Ward),nl,
-                                                                write(' Nurses: '), write(N),nl,
-                                                                write(' Doctors: '), write(D),nl,
-                                                                write(' Resuscitators: '), write(R),nl,
-                                                                write(' Patient: '), write(Patient),nl,
                                                                 messageA(
                                                                     Receiver_Ward,
                                                                     send_message(
@@ -113,15 +114,12 @@ human_resource_lendingE(Patient,Receiver_Ward,Sender_Ward) :>
                                                                         'HRCoordinator_instance')
                                                                 ).
 
-human_resource_restitutionE(N,D,R,Patient,Receiver_Ward,Sender_Ward) :> format(
-                                                                                'Nurses=~w Doctors=~w Resuscitators=~w Patient=~w Receiver=~w Sender=~w~n',
-                                                                                [N, D, R, Patient, Receiver_Ward, Sender_Ward]
-                                                                            ),
+human_resource_restitutionE(N,D,R,Patient,Receiver_Ward,Sender_Ward) :> 
                                                                         hr_requests(Req),
-                                                                        write(Req),nl,
+                                                                        write('=====HR restitution to the Ward: '),write(Sender_Ward),write(' from '),write(Receiver_Ward),write('====='),nl,
                                                                         member(Receiver_Ward-Ward_receiver_map, Req),
                                                                         select(Patient-_,Ward_receiver_map,New_req_list),
                                                                         retractall(hr_requests(Req)),
                                                                         assertz(hr_requests(New_req_list)),
-                                                                        write(New_req_list),
+                                                                        write('HR again out of the ward: '),write(New_req_list),nl,
                                                                         messageA(Sender_Ward,send_message(human_resource_restore_ward(N,D,R), 'HRCoordinator_instance')).

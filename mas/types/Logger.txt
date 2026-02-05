@@ -25,17 +25,25 @@ term_to_atom_safe(Term, Atom) :-
     term_to_atom(Term, Atom).
 
 
-atomic_to_atom(A, A) :-
-    atom(A), !.
-atomic_to_atom(N, Atom) :-
-    number(N), !,
-    number_chars(N, Chars),
-    atom_chars(Atom, Chars).
-atomic_to_atom(Term, Atom) :-
-    term_to_atom(Term, Atom).
+underscore_to_space(AtomIn, AtomOut) :-
+    atom_chars(AtomIn, CharsIn),
+    replace_underscore(CharsIn, CharsOut),
+    atom_chars(AtomOut, CharsOut).
+
+replace_underscore([], []).
+replace_underscore(['_'|T], [' '|R]) :-
+    replace_underscore(T, R).
+replace_underscore([H|T], [H|R]) :-
+    H \= '_',
+    replace_underscore(T, R).
 
 
-taking_charge_emergencyE(Patient,Ward):>atom_concat('emergency_for_patient_',Patient,Temp),atom_concat(Temp,'_taken_in_charge',Text),logger(Text,Ward).
+
+taking_charge_emergencyE(Patient,Ward):>
+                                        atom_concat('emergency_for_patient_',Patient,Temp),
+                                        atom_concat(Temp,'_taken_in_charge',Temp2),
+                                        underscore_to_space(Temp2,Text),
+                                        logger(Text,Ward).
 
 new_urgencyE(TP,W,PT) :> true.
 
@@ -54,7 +62,7 @@ human_resource_replyE(N,D,R,Receiver_Ward,Sender_Ward,Patient):> write('human_re
 
 human_resource_restore_wardE(Old_N, Old_D, Old_R, New_N, New_D, New_R, Ward) :> write('human_resource_restore_wardE'),nl.
 
-loggerE(Text, Sender) :>
+logger(Text, Sender) :-
     log_file(File),
     open(File, append, Stream),
     

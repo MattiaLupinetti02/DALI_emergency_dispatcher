@@ -24,7 +24,7 @@ get_agent_nameI(_) :>
         retractall(my_ward_name(_)),
         assertz(my_ward_name(Ward))
     ;
-        write('ERRORE: Base non inizia con "Ward_": '), write(FirstBase), nl
+        write('ERROR: Base does not starts woth "Ward_": '), write(FirstBase), nl
     ).
                     
 base_name(Path, Base) :- 
@@ -78,12 +78,10 @@ equipe_staff(['Nurses','Doctors','Resuscitators']).
 
 make_wardI :>
     ward_equipe(Map),
-    write('ward equipe setted:'),write(Map) , nl,
+    write('ward equipe setted: '),write(Map) , nl,
 	my_ward_name(Ward), write('ward name: '), write(Ward), nl,
 	my_instance_name(Name), write('Instance name: '), write(Name), nl,
-	write('end configuration'),nl,
-    messageA('Logger',
-        send_message(logger('End_ward_configuration',Name), Ward)).
+	write('end configuration'),nl.
 
 
 make_ward :-my_ward_name(Name),
@@ -157,11 +155,11 @@ kv_to_need([K-V | T], [need(K,V) | NT]) :-
     kv_to_need(T, NT).
 
 assign_rrtI(Type, Ward, Patient) :>
-    
+    write('=====Setting rapid rescue team for the patient: '),write(Patient),write('====='),nl,
     rrt_format(RRT),
     ward_equipe(Equipe),
     external_hr_request(Help_req_list),
-    write('available equipe: '),write(Equipe),
+    write('Available equipe: '),write(Equipe),nl,
     checkRRT(RRT, Equipe, NeedyMap),
     \+member(Patient-NeedyMap,Help_req_list),
     (
@@ -171,14 +169,14 @@ assign_rrtI(Type, Ward, Patient) :>
             retractall(ward_equipe(_)),
             assertz(ward_equipe(NewEquipe)),
             assertz(rrt_assigned(Patient)),
-            write('[OK] RRT assegnato al paziente: '),
+            write('[OK] RRT recularly assigned to the patient: '),
             write(Patient), nl,
-            write('available staff: '), write(NewEquipe),nl
+            write('Available staff after RRT assignment: '), write(NewEquipe),nl
         )
     ;   (
             assertz(waiting_hr(Patient)),
             my_instance_name(Me),
-            write('[WARN] Risorse insufficienti: '),
+            write('[WARN] Insufficient HR: '),
             kv_to_need(NeedyMap, NeedList),
             write(NeedList),nl,
             append(Help_req_list, [Patient-NeedyMap],New_help_req_list),
@@ -195,9 +193,7 @@ assign_rrtI(Type, Ward, Patient) :>
         )
         
     ),
-    my_instance_name(Name),
-    messageA('Logger',
-        send_message(logger('Starting_assign_rrt_operation',Name), Name)).
+    my_instance_name(Name).
 
 get_value(Chiave, ListaCoppie, Default, Valore) :-
     (member(Chiave-Valore, ListaCoppie) ->
@@ -227,7 +223,6 @@ random_time(R) :- random(NUM), R is integer(NUM *10).
 taking_charge_emergencyI(Patient, Sensor) :>
     write('=== taking_charge_emergencyI START ==='), nl,
     write('Patient: '), write(Patient), nl,
-    write('Sensor: '), write(Sensor), nl,
     my_instance_name(Instance),
     write('Notifying sensor that patient is taken in charge...'), nl,
      messageA(
@@ -237,11 +232,11 @@ taking_charge_emergencyI(Patient, Sensor) :>
     retractall(emergency_timer(Patient,_)),
     random_time(T),
     assertz(emergency_timer(Patient,T)),
-    write('[TIMER STARTED] '),write(T),write(' ticks for patient '),
+    write('[TIMER STARTED] '),write(T),write(' ticks for patient: '),
     write(Patient), nl,
     write('=== taking_charge_emergencyI END ==='), nl,
     messageA('Logger',
-        send_message(logger('Emergency_taken_in_charge',Instance), Instance)).
+        send_message(taking_charge_emergency(Patient,Instance), Instance)).
 
 
 tick(Patient,T) :- emergency_timer(Patient,T), ground(Patient), ground(T).
@@ -312,8 +307,7 @@ end_emergencyA(Patient) :-
     messageA(SensorName,send_message(emergency_handled,My_ward_name)),
     retractall(urgency(_,_,Patient)),
     my_instance_name(Name),
-    messageA('Logger',
-        send_message(logger('Emergency_end',Name), Name)),
+
     to_restore(N,D,R,Patient,Receiver_Ward,Sender_Ward),
     messageA('HRCoordinator_instance',send_message(human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward),Receiver_Ward)),
     retractall(to_restore(N,D,R,Patient,Receiver_Ward,Sender_Ward)).
@@ -395,33 +389,32 @@ add_external_equipe([Hr-Num | Tail]) :- ward_equipe(Equipe),
                                         add_external_equipe(Tail).
 
 
-human_resource_replyE(N,D,R,Receiver_Ward,Sender_Ward,Patient) :>   
+human_resource_replyE(N,D,R,Receiver_Ward,Sender_Ward,Patient) :>   write('====== Esternal HR received ======'),nl,
+                                                                    write('From the Ward: '),write(Sender_Ward),nl,
                                                                     waiting_hr(Patient),
                                                                     retractall(waiting_hr(Patient)),
                                                                     external_hr_request(Help_req_list),
                                                                     NeedyMap = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
+                                                                    write('HR received:'),nl,
+                                                                    write(NeedyMap),nl,
                                                                     member(Patient-List,Help_req_list),
                                                                     add_external_equipe(List),
-                                                                    ward_equipe(Equipe), write(Equipe),nl,
+                                                                    ward_equipe(Equipe),
                                                                     rrt_format(Requested),
                                                                     load_rrt(Requested, Equipe, NewEquipe),
                                                                     retractall(ward_equipe(_)),
                                                                     assertz(ward_equipe(NewEquipe)),
                                                                     assertz(rrt_assigned(Patient)),
                                                                     assertz(to_restore(N,D,R,Patient,Receiver_Ward,Sender_Ward)),
-                                                                    nl,write('received extra HR'),nl,                            
-                                                                    my_instance_name(Name),
-                                                                    messageA('Logger',
-                                                                        send_message(logger('External_HR_received',Name), Name)).
+                                                                                              
+                                                                    my_instance_name(Name).
 
 human_resource_restore_wardE(N,D,R) :>  
                                         To_restore = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
                                         ward_equipe(Old_equipe),
                                         map_sum(To_restore,Old_equipe,Equipe),
                                         write(Equipe),
-                                        my_instance_name(Name),
-                                        messageA('Logger',
-                                            send_message(logger('HR_restored',Name), Name)).
+                                        my_instance_name(Name).
 
 
 print_map([]).
