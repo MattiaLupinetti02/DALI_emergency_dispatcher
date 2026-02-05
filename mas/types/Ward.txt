@@ -128,7 +128,7 @@ def_urgencyA(TP,WR, PT) :>
 checkRRT(RRT, Equipe, Needy) :-
     checkRRT(RRT, Equipe, [], Needy).
 
-checkRRT([], _, Acc, Acc).
+checkRRT([], _, Acc, Acc) :- !.
 
 checkRRT([Key-FVal | FT], Equipe, Acc, Needy) :-
     (   member(Key-EVal, Equipe)
@@ -357,10 +357,13 @@ select_needy(List, Result) :- findall(Key-Value, (member(Key-Value, List), Value
 lended_hr([]).
 
 human_resource_requestE(Nurses,N,Doctors,D,Resuscitators,R,Rec_Ward,Patient) :>
+                                                                        write('====== new HR request ======'),nl,
                                                                         select_needy([Nurses-N,Doctors-D,Resuscitators-R], Requested),
                                                                         ward_equipe(Equipe),
-                                                                        
+                                                                        write('Requested: '), write(Requested),nl,
+                                                                        write('Equipe: '), write(Equipe),nl,
                                                                         checkRRT(Requested, Equipe, Needy),
+                                                                        write('Needy: '),write(Needy),nl,
                                                                         (
                                                                             Needy == [] ->
                                                                                 load_rrt(Requested, Equipe, NewEquipe),
@@ -369,15 +372,18 @@ human_resource_requestE(Nurses,N,Doctors,D,Resuscitators,R,Rec_Ward,Patient) :>
                                                                                 my_instance_name(Send_Ward),
                                                                                 messageA('HRCoordinator_instance',
                                                                                     send_message(human_resource_lending(Patient,Rec_Ward,Send_Ward),Send_Ward)
-                                                                                )                                                                            
-                                                                        ), 
+                                                                                )
+                                                                            
+                                                                        ),
 
-                                                                        lended_hr(Old), append(old,[Ward], New),
-                                                                        retractall(lended_hr(hr_requests)),
-                                                                        assertz(lended_hr(New)),                                                                        
-                                                                        my_instance_name(Name),
-                                                                        messageA('Logger',
-                                                                            send_message(logger('HR_request_received',Name), Name)).
+                                                                        lended_hr(Old), 
+                                                                        write('Old: '),write(Old),nl,
+                                                                        (\+member(Rec_Ward,Old)->
+                                                                            append(old,[Rec_Ward], New),
+                                                                            retractall(lended_hr(_)),
+                                                                            assertz(lended_hr(New))
+                                                                        ),
+                                                                        write('=====Sendend HR=====').
 add_external_equipe([]).
 add_external_equipe([Hr-Num | Tail]) :- ward_equipe(Equipe),
                                         member(Hr-Val,Equipe),

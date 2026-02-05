@@ -34,7 +34,8 @@ human_resource_requestE(Nurses,N,Doctors,D,Resuscitators,R, From, Patient) :>
                                                                                 append(Old, [From-[Patient-Result]], Requests),
                                                                                 retractall(hr_requests(_)),
                                                                                 assertz(hr_requests(Requests)),
-                                                                                write(Requests),nl, send_req(Requests, From, Patient).
+                                                                                send_req(Requests, From, Patient),
+                                                                                assertz(emergency_timer(From,Patient,10)), write('timer setted'),nl.
 send_req(Requests, From, Patient) :- 
                                     (   member(From-Value, Requests), 
                                         member(Patient-Requested_equipe, Value) ->
@@ -43,6 +44,8 @@ send_req(Requests, From, Patient) :-
                                         send_req_to_wards(Wards, Requested_equipe, From, Patient) 
                                         ;true 
                                     ). 
+
+
 send_req_to_wards([], _, _,_).
 send_req_to_wards([Ward | Tail], Request, From, Patient) :- ground(Request),
                                                             ground(From),
@@ -60,28 +63,53 @@ send_req_to_wards([Ward | Tail], Request, From, Patient) :- ground(Request),
                                                                             ) 
                                                             ),send_req_to_wards(Tail, Request, From, Patient).
 
+:- dynamic emergency_timer/3.
+
+tick(Requests, From, Patient,T) :- emergency_timer(From,Patient,T),hr_requests(Requests), member(From-Value,Requests), member(Patient-Req,Value).
+
+tickI(Requests, From, Patient,T):>
+    
+    write('[TICK] Patient '), write(Patient),
+    write(' remaining: '), write(T), nl,
+    (
+        T > 1 ->
+            T1 is T - 1,
+            retractall(emergency_timer(From,Patient,_)),
+            assertz(emergency_timer(From,Patient,T1))
+        ;
+            retractall(emergency_timer(From,Patient,_)),
+            write('[END EMERGENCY TRIGGER] Patient '),
+            write(Patient), nl,
+            send_req(Requests, From, Patient),
+            write('la richiesta c e ancora :'),nl,
+            write(Requests)
+    ).
+
+
 get_value(Chiave, ListaCoppie, Default, Valore) :- (member(Chiave-Valore, ListaCoppie) -> true ; Valore = Default ). 
 
-human_resource_lendingE(Patient,Receiver_ward,Sender_Ward) :>   hr_requests(Requests),
+human_resource_lendingE(Patient,Receiver_Ward,Sender_Ward) :>   
+                                                                retractall(emergency_timer(Receiver_Ward,Patient,_)),
+                                                                hr_requests(Requests),
                                                                 write('Old requests: '), write(Requests),nl,
-                                                                write(' Rec_Ward: '),write(Receiver_ward),nl,
-                                                                member(Receiver_ward-Value, Requests), 
+                                                                write(' Rec_Ward: '),write(Receiver_Ward),nl,
+                                                                member(Receiver_Ward-Value, Requests), 
                                                                 member(Patient-Requested_equipe, Value),
                                                                 write(Requested_equipe),
                                                                 get_value('Nurses',Requested_equipe,0,N),
                                                                 get_value('Doctors',Requested_equipe,0,D),
                                                                 get_value('Resuscitators',Requested_equipe,0,R),
                                                                 write('inviati'), write(' Patient: '),write(Patient),nl,
-                                                                write(' Rec_Ward2: '),write(Receiver_ward),nl,
+                                                                write(' Rec_Ward2: '),write(Receiver_Ward),nl,
                                                                 write(' Send_Ward: '), write(Sender_Ward),nl,
                                                                 write(' Nurses: '), write(N),nl,
                                                                 write(' Doctors: '), write(D),nl,
                                                                 write(' Resuscitators: '), write(R),nl,
                                                                 write(' Patient: '), write(Patient),nl,
                                                                 messageA(
-                                                                    Receiver_ward,
+                                                                    Receiver_Ward,
                                                                     send_message(
-                                                                        human_resource_reply(N,D,R,Receiver_ward,Sender_Ward,Patient),
+                                                                        human_resource_reply(N,D,R,Receiver_Ward,Sender_Ward,Patient),
                                                                         'HRCoordinator_instance')
                                                                 ).
 

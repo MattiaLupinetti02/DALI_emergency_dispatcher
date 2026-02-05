@@ -4,7 +4,57 @@
 :- dynamic log_file/1.
 log_file('log.txt').
 
-loggerE(Text, Sender) :-
+atomic_list_concat(List, Atom) :-
+    atomic_list_concat(List, '', Atom).
+
+atomic_list_concat([], _, '').
+atomic_list_concat([H|T], Sep, Atom) :-
+    term_to_atom_safe(H, HAtom),
+    atomic_list_concat(T, Sep, Rest),
+    ( Rest == '' ->
+        Atom = HAtom
+    ;
+        atom_concat(HAtom, Sep, Temp),
+        atom_concat(Temp, Rest, Atom)
+    ).
+
+term_to_atom_safe(Term, Atom) :-
+    open_null_stream(S),
+    write_term(S, Term, [quoted(false)]),
+    close(S),
+    term_to_atom(Term, Atom).
+
+
+atomic_to_atom(A, A) :-
+    atom(A), !.
+atomic_to_atom(N, Atom) :-
+    number(N), !,
+    number_chars(N, Chars),
+    atom_chars(Atom, Chars).
+atomic_to_atom(Term, Atom) :-
+    term_to_atom(Term, Atom).
+
+
+taking_charge_emergencyE(Patient,Ward):>atom_concat('emergency_for_patient_',Patient,Temp),atom_concat(Temp,'_taken_in_charge',Text),logger(Text,Ward).
+
+new_urgencyE(TP,W,PT) :> true.
+
+assign_rrtE(Result,Patient,Ward):> atom_concat('for_the_emergency_of_',Patient,Temp),atom_concat(Temp,Result,Text),logger(Text,Ward).
+
+end_emergencyE(Patient,Ward) :> atom_concat('the_emergency_of_',Patient,Temp),atom_concat(Temp,'_has_been_correctly_handled',Text),logger(Text,Ward).
+
+human_resource_requestE(N,D,R,Rec_Ward,Sender_Ward,Patient):>   Req_map = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
+                                                                atomic_list_concat(Req_map,Req),
+                                                                atom_concat('From_sender_ward_',Sender_Ward,Temp),
+                                                                atom_concat(Temp,'_requested_',Temp2),
+                                                                atom_concat(Temp2,Req,Text),logger(Text,Rec_Ward).
+
+human_resource_replyE(N,D,R,Receiver_Ward,Sender_Ward,Patient):> write('human_resource_replyE'),nl.
+
+
+human_resource_restore_wardE(Old_N, Old_D, Old_R, New_N, New_D, New_R, Ward) :> write('human_resource_restore_wardE'),nl.
+
+loggerE(Text, Sender) :>
     log_file(File),
     open(File, append, Stream),
     
