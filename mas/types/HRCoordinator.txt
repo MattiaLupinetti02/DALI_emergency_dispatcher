@@ -6,6 +6,11 @@ config(0).
 equipe_read(0).
 met(0).
 wards([]).
+
+shutdownE :>
+    write('Shutting down agent...'), nl,
+    halt.
+
 read_wardsI :>  open('reparti', read, Stream), 
                 read_loop(Stream),
                 close(Stream),
@@ -42,7 +47,12 @@ human_resource_requestE(Nurses,N,Doctors,D,Resuscitators,R, From, Patient) :>
                                                                                 retractall(hr_requests(_)),
                                                                                 assertz(hr_requests(Requests)),
                                                                                 send_req(Requests, From, Patient),
-                                                                                assertz(emergency_timer(From,Patient,10)),
+                                                                                messageA('Logger',
+                                                                                    send_message(
+                                                                                        human_resource_request(N,D,R,From,Patient),
+                                                                                        'HRCoordinator_instance')
+                                                                                    ),
+                                                                                assertz(emergency_timer(From,Patient,2)),
                                                                                 write('Request timeout started for HR: '),write(List),
                                                                                 write('for the patient: '),write(Patient),write(' from the ward: '),
                                                                                 write(From),nl.
@@ -112,14 +122,34 @@ human_resource_lendingE(Patient,Receiver_Ward,Sender_Ward) :>
                                                                     send_message(
                                                                         human_resource_reply(N,D,R,Receiver_Ward,Sender_Ward,Patient),
                                                                         'HRCoordinator_instance')
+                                                                ),messageA('Logger',
+                                                                    send_message(
+                                                                        human_resource_lending(N,D,R,Receiver_Ward,Sender_Ward,Patient),
+                                                                        'HRCoordinator_instance')
                                                                 ).
 
 human_resource_restitutionE(N,D,R,Patient,Receiver_Ward,Sender_Ward) :> 
                                                                         hr_requests(Req),
-                                                                        write('=====HR restitution to the Ward: '),write(Sender_Ward),write(' from '),write(Receiver_Ward),write('====='),nl,
+                                                                        write('=====HR restitution to the Ward to '),write(Sender_Ward),write(' from '),write(Receiver_Ward),write('====='),nl,
                                                                         member(Receiver_Ward-Ward_receiver_map, Req),
                                                                         select(Patient-_,Ward_receiver_map,New_req_list),
                                                                         retractall(hr_requests(Req)),
                                                                         assertz(hr_requests(New_req_list)),
                                                                         write('HR again out of the ward: '),write(New_req_list),nl,
-                                                                        messageA(Sender_Ward,send_message(human_resource_restore_ward(N,D,R), 'HRCoordinator_instance')).
+                                                                        messageA(Sender_Ward,send_message(human_resource_restore_ward(N,D,R), 'HRCoordinator_instance')),
+                                                                        messageA('Logger',
+                                                                            send_message(
+                                                                                human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward),
+                                                                                'HRCoordinator_instance')
+                                                                        ).
+
+
+stop_send_reqE(Receiver_Ward):> hr_requests(Req),
+                                write(Req),nl,
+                                member(Receiver_Ward-Ward_receiver_map, Req),
+                                select(Receiver_Ward-Ward_receiver_map, Req,New_req_list),
+                                retractall(hr_requests(Req)),
+                                assertz(hr_requests(New_req_list)),
+                                write(New_req_list),nl,
+                                retractall(emergency_timer(Receiver_Ward,_,_)),
+                                write('diocanide'),nl.

@@ -1,28 +1,34 @@
 :- use_module(library(system)).
 :- use_module(library(lists)).
+:- use_module(library(codesio)).
+
+
+shutdownE :>
+    write('Shutting down agent...'), nl,
+    halt.
+
 
 :- dynamic log_file/1.
 log_file('log.txt').
 
 atomic_list_concat(List, Atom) :-
-    atomic_list_concat(List, '', Atom).
+    atomic_list_concat(List, ' ', Atom).
 
 atomic_list_concat([], _, '').
 atomic_list_concat([H|T], Sep, Atom) :-
     term_to_atom_safe(H, HAtom),
     atomic_list_concat(T, Sep, Rest),
-    ( Rest == '' ->
-        Atom = HAtom
-    ;
-        atom_concat(HAtom, Sep, Temp),
+    (   Rest == ''
+    ->  Atom = HAtom
+    ;   atom_concat(HAtom, Sep, Temp),
         atom_concat(Temp, Rest, Atom)
     ).
 
 term_to_atom_safe(Term, Atom) :-
-    open_null_stream(S),
-    write_term(S, Term, [quoted(false)]),
-    close(S),
-    term_to_atom(Term, Atom).
+    write_term_to_codes(Term, Codes, [quoted(false)]),
+    atom_codes(Atom, Codes).
+
+
 
 
 underscore_to_space(AtomIn, AtomOut) :-
@@ -38,29 +44,90 @@ replace_underscore([H|T], [H|R]) :-
     replace_underscore(T, R).
 
 
+def_urgencyE(TP, WR, PT) :> atom_concat('===== New Emergency for the patient ',PT,Temp),
+                            atom_concat(Temp,' in the Ward ',Temp2),
+                            atom_concat(Temp2,WR,Temp3),
+                            atom_concat(Temp3,' : ',Temp4),
+                            atom_concat(Temp4,TP,Temp5),
+                            atom_concat(Temp5,' =====',Text),
+                            atom_concat('Ward_',WR,Ward),
+                            logger(Text,Ward).
 
-taking_charge_emergencyE(Patient,Ward):>
-                                        atom_concat('emergency_for_patient_',Patient,Temp),
+taking_charge_emergencyE(Patient,Ward):> write('taking_charge_emergency'),nl,
+                                        atom_concat('Emergency_for_patient_',Patient,Temp),
                                         atom_concat(Temp,'_taken_in_charge',Temp2),
                                         underscore_to_space(Temp2,Text),
                                         logger(Text,Ward).
 
-new_urgencyE(TP,W,PT) :> true.
 
-assign_rrtE(Result,Patient,Ward):> atom_concat('for_the_emergency_of_',Patient,Temp),atom_concat(Temp,Result,Text),logger(Text,Ward).
+end_emergencyE(Patient,Ward) :> 
+                                atom_concat('[END EMERGENCY]: the_emergency_of_',Patient,Temp),
+                                atom_concat(Temp,'_has_been_correctly_handled',Temp2),
+                                underscore_to_space(Temp2,Text),
+                                logger(Text,Ward).
 
-end_emergencyE(Patient,Ward) :> atom_concat('the_emergency_of_',Patient,Temp),atom_concat(Temp,'_has_been_correctly_handled',Text),logger(Text,Ward).
+human_resource_requestE(N,D,R,Rec_Ward,Patient):>   write('human_resource_request'),nl,
+                                                    Req_map = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
+                                                    atomic_list_concat(Req_map,Req),
+                                                    atom_concat('HR_request_from_',Rec_Ward,Temp),
+                                                    atom_concat(Temp,'_of_',Temp2),
+                                                    atom_concat(Temp2,Req,Temp3),
+                                                    underscore_to_space(Temp3,Text),
+                                                    logger(Text,'HRCoordinator_instance').
 
-human_resource_requestE(N,D,R,Rec_Ward,Sender_Ward,Patient):>   Req_map = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
-                                                                atomic_list_concat(Req_map,Req),
-                                                                atom_concat('From_sender_ward_',Sender_Ward,Temp),
-                                                                atom_concat(Temp,'_requested_',Temp2),
-                                                                atom_concat(Temp2,Req,Text),logger(Text,Rec_Ward).
+human_resource_lendingE(N,D,R,Receiver_Ward,Sender_Ward,Patient):> write('human_resource_lending'),nl,
+                                                                    Req_map = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
+                                                                    atomic_list_concat(Req_map,Req),
+                                                                    atom_concat('HR_lended_from_',Sender_Ward,Temp),
+                                                                    atom_concat(Temp,'_to_',Temp2),
+                                                                    atom_concat(Temp2,Receiver_Ward,Temp3),
+                                                                    atom_concat(Temp3,':_',Temp4),
+                                                                    atom_concat(Temp4,Req,Temp5),
+                                                                    underscore_to_space(Temp5,Text),
+                                                                    logger(Text,'HRCoordinator_instance').
+
+human_resource_restitutionE(N,D,R,Patient,Receiver_Ward,Sender_Ward) :> write('human_resource_restitution'),nl,
+                                                                    Req_map = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
+                                                                    atomic_list_concat(Req_map,Req),
+                                                                    atom_concat('HR_restitution_from_',Receiver_Ward,Temp),
+                                                                    atom_concat(Temp,'_to_',Temp2),
+                                                                    atom_concat(Temp2,Sender_Ward,Temp3),
+                                                                    atom_concat(Temp3,':_',Temp4),
+                                                                    atom_concat(Temp4,Req,Temp5),
+                                                                    underscore_to_space(Temp5,Text),
+                                                                    logger(Text,'HRCoordinator_instance').
 
 human_resource_replyE(N,D,R,Receiver_Ward,Sender_Ward,Patient):> write('human_resource_replyE'),nl.
 
 
-human_resource_restore_wardE(Old_N, Old_D, Old_R, New_N, New_D, New_R, Ward) :> write('human_resource_restore_wardE'),nl.
+human_resource_restore_wardE(Old_N, Old_D, Old_R, New_N, New_D, New_R, Ward) :> write('human_resource_restore_ward'),nl,
+                                                                                Old_equipe = ['Nurses'-Old_N,'Doctors'-Old_D,'Resuscitators'-Old_R],
+                                                                                New_equipe = ['Nurses'-New_N,'Doctors'-New_D,'Resuscitators'-New_R],
+                                                                                atomic_list_concat(Old_equipe,Old_equipe_atom),
+                                                                                atomic_list_concat(New_equipe,New_equipe_atom),
+                                                                                atom_concat('Restoring_lended_HR_:_',Old_equipe_atom,Temp),
+                                                                                atom_concat(Temp,'_current_equipe_',Temp2),
+                                                                                atom_concat(Temp2,New_equipe_atom,Temp3),
+                                                                                underscore_to_space(Temp3,Text),
+                                                                                logger(Text,Ward).
+
+
+
+
+
+assign_rrtE(Result,Patient,From):>  write(Result),nl,
+                                     (
+                                        Result == 0 ->
+                                            atom_concat('Not_enough_HR_in_the_Ward_for_the_emergency_of_the_patient_',Patient, Temp),
+                                            underscore_to_space(Temp,Text)
+                                        ;
+                                            (
+                                                atom_concat('RRT_regularly_assigned_to_the_patient_',Patient, Temp),
+                                                underscore_to_space(Temp,Text)
+                                            )
+                                    ),
+                                        logger(Text,From).
+
 
 logger(Text, Sender) :-
     log_file(File),
