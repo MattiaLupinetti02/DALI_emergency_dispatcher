@@ -150,7 +150,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `alarm(Type,Val,Patient)`        | external | HealthSensor      |
 | `human_resource_reply(human_res_map,Ward)`   | external | HRCoordinator      |
 | `human_resource_request(human_res_map,Ward)`   | external | HRCoordinator      |
-| `human_resource_restore_ward(human_res_map)`   | external | HRCoordinator      |
+| `human_resource_restore_ward(N,D,R)`   | external | HRCoordinator      |
 | `assign_rrt`  |internal  |Ward  |
 | `taking_charge_emergency`  |internal  |Ward  |
 | `met_assignment`   | external | HRCoordinator       |
@@ -433,6 +433,60 @@ classDiagram
     HRCoordinator --> DataRecord : reads "reparti" file
     ValuesSimulator --> DataRecord : reads "pazienti" file
     Ward --> DataRecord : reads "reparti" file
+
+```
+```mermaid
+sequenceDiagram
+    autonumber
+    participant HealthSensor
+    participant Ward
+    participant WardLender
+    participant HRCoordinator
+    participant Logger
+
+    %% PHASE 1 - Detection
+    HealthSensor->>Ward: alarm(WardA, PatientX, Type)
+    Note right of Ward: Receives abnormal vital parameter alert
+
+    Ward->>Logger: def_urgency(TP, WR, PT)
+
+    %% PHASE 2 - Resource Assessment
+    alt insufficient staff
+        Ward->>HRCoordinator: human_resource_request(N,D,R, Me, Patient)
+        HRCoordinator ->> Logger : human_resource_request(N,D,R,From,Patient)
+        HRCoordinator-->>WardLender : human_resource_request(N,D,R, Me, Patient)
+        WardLender -> HRCoordinator : human_resource_lending(Patient,Rec_Ward,Send_Ward),Send_Ward)
+        HRCoordinator --> Ward : human_resource_reply(N,D,R,Receiver_Ward,Sender_Ward,Patient)
+        HRCoordinator ->> Logger : human_resource_lending(N,D,R,Receiver_Ward,Sender_Ward,Patient)
+    end
+
+    
+    %% PHASE 3 - Local Response
+    Ward->>Ward: assign_rrt
+    Ward ->> Logger :assign_rrt(Result,Patient,Me)
+    Ward->>Ward: load_rrt(RRT, Equipe, NewEquipe)
+    Note right of Ward: Defines RRT and updates available equipe status
+
+    %% PHASE 5 - Emergency Taken in Charge
+    Ward->>HealthSensor: taking_charge_emergency
+    Note right of HealthSensor: Stops repeated alarms
+    Ward ->> Logger: taking_charge_emergency(Patient,Instance)
+    
+
+    %% PHASE 6 - Resolution
+    Ward->>HRCoordinator: stop_send_req(My_ward_name)
+    Ward->>Logger: emergency_handled(Patient,My_ward_name)
+
+    alt insufficient staff
+        Ward->>HRCoordinator:human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward)
+        Ward ->> Logger: human_resource_restore_ward(Old_N, Old_D, Old_R, New_N, New_D, New_R, Ward_instance)
+        HRCoordinator-->>WardLender: human_resource_restore_ward(N,D,R)
+        HRCoordinator ->> Logger :human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward)
+    end
+
+    %% PHASE 7 - Finalization
+    HRCoordinator-->>Logger: update_log_met_assignment(WardA)
+
     
     Ward --> HealthSensor : communicates with
     Ward --> HRCoordinator : communicates with
