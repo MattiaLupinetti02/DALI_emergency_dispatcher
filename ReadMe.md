@@ -258,6 +258,8 @@ Design and implement a multi-agent system in the DALI language for the detection
 | Heart Rate        | < 40 bpm      | > 130 bpm      |
 | O₂ Saturation     | < 90%         | —              |
 
+```mermaid
+
 
 classDiagram
     %% Agent Base
@@ -436,4 +438,4 @@ classDiagram
     Ward --> HRCoordinator : communicates with
     HRCoordinator --> Ward : coordinates wards
     Logger --> AllAgents : logs all activities
-    
+```
