@@ -1,7 +1,7 @@
 # Multi-Agent System for Emergency Handling and Resources Dispatching in a smart-hospital
 
 ## Objective
-Design and implement a multi-agent system in the DALI language for the detection and coordinated management of emergency as Cardiac Arrest, Respiratory Arrest, Acute Respiratory Distress, Severe Cardiovascular Instability, Systemic Disturbances, and Iatrogenic Complications.   
+Design and implement a multi-agent system in the DALI language for the detection and coordinated management of emergency as Cardiac Arrest, Acute Respiratory Distress and Severe Cardiovascular Instability.   
 
 ---
 
@@ -12,9 +12,10 @@ Design and implement a multi-agent system in the DALI language for the detection
 | Role         | Main Responsibilities                                     |
 |--------------|-----------------------------------------------------------|
 | **HealthSensor**   | Detects out of range vital parameters.    |
-| **WardManager** | Manages the internal equipe defining the Rapid Rescue Team (RRT) and alerts the HRCoordinator in order to achieve the Medical Emergency Team(MET). |
-| **HRCoordinator**| Manages the Medical Emergency Team (MET) and the human resources through the wards.                           |
+| **Ward** | Manages the internal equipe defining the Rapid Rescue Team (RRT) and alerts the HRCoordinator in order to achieve extra HR. |
+| **HRCoordinator**| Manages requests of human resources through the wards.                           |
 | **Logger**   | Records all events, actions, and system status.           |
+| **ValuesSimulator**   | Sends randomic vital signs to the HealthSensors|
 
 ### 1.1.1 Role Schemas
 
@@ -23,78 +24,73 @@ Design and implement a multi-agent system in the DALI language for the detection
 #### **Role Schema: HealthSensor**
 
 - **Description:**  
-  Detects out-of-range vital parameters (e.g., systolic pressure, heart rate, oxygen saturation, respiratory rate) from the monitored patient.  
-  When an anomaly is detected, it triggers an alarm to the WardManager and updates the Logger about the new emergency.  
-  Once the WardManager takes charge of the event, the HealthSensor stops generating repeated alarms.
+  Detects out-of-range vital parameters ( systolic pressure and oxygen saturation) from the monitored patient.  
+  When an anomaly is detected, it triggers an alarm to the Ward.  
+  Once the Ward takes charge of the event, the HealthSensor stops generating repeated alarms.
 
 - **Protocols and Activities:**  
-  `alarm`, `new_emergency`, `taking_charge_emergency`.
+  `configuration_phase`,`critical_*_out(Patient,*)`.
 
 - **Permissions:**
-  - **Reads:** `new_systolic_pressure(Value)`, `new_HR(Value)`, `new_O2(Value)`, `new_respiratory_rate(Value)`
-  - **Generates:** `alarm(Ward,Patient,Values)`, `new_emergency(Ward,Patient,Values)`
+  - **Reads:** `new_*(Patient,*)`,`taking_charge_emergency`,`emergency_handled`
+  - **Generates:** `alarm(Values,Ward,Patient)`
 
 - **Responsibilities:**
   - **Liveness:**  
-    `(new_*(Value) → alarm(Ward,Patient,Values) → new_emergency(Ward,Patient,Values))`
+    `(new_*(Value) → critical_*_out(Patient,*) → alarm(Ward,Patient,Values)`
   - **Safety:**  
     Alarms must be generated only if threshold limits are exceeded.  
-    Avoid redundant alarms until `taking_charge_emergency` is received from the WardManager.
+    Avoid redundant alarms until `taking_charge_emergency` is received from the Ward, restart to monitor patients after receiving `emergency_handled`.
 
 ---
 
-#### **Role Schema: WardManager**
+#### **Role Schema: Ward**
 
 - **Description:**  
   Coordinates emergency handling within the ward.  
-  Receives alarms from HealthSensor agents, defines the Rapid Rescue Team (RRT), updates local equipe availability, and interacts with the HRCoordinator to request or lend human resources or to obtain the Medical Emergency Team (MET).  
+  Receives alarms from HealthSensor agents, defines the Rapid Rescue Team (RRT), updates local equipe availability, and interacts with the HRCoordinator to request or lend human resources.  
   It ensures that emergencies are promptly taken in charge and properly logged once resolved.
 
 - **Protocols and Activities:**  
-  `set_rrt`, `decrease_available_equipe(human_resources_map)`, `increase_available_equipe(human_resources_map)`,  
-  `(human_res_map,Ward)`, `human_resource_lending(human_res_map,From)`,  
-  `met_request`, `emergency_handled(Ward,Patient)`, `taking_charge_emergency`.
+  `assign_rrt`, `configuration_phase`, `checkRRT(RRT, Equipe, Needy)`,  
+  `get_value(Chiave, ListaCoppie, Default, Valore)`, `make_healthsensor_name(Patient, SensorName)`, `emergency_handled(Ward,Patient)`, `taking_charge_emergency`,`map_diff`,`map_sum`,`load_rrt`,`select_needy`, `add_external_equipe`.
 
 - **Permissions:**
-  - **Reads:** `alarm(Type,Val,Patient)`, `human_resource_reply(human_res_map,Ward)`, `met_assignment`, `human_resource_restore_ward(human_res_map)`
+  - **Reads:** `alarmE(TP, WR, PT) `, `human_resource_reply(N,D,R,Receiver_Ward,Sender_Ward,Patient)`, `human_resource_request(N,D,R,Rec_Ward,Patient)`, `human_resource_restore_ward(N,D,R)`
   - **Changes:** `available_equipe(Ward)`
-  - **Generates:** `human_resource_request(human_res_map,Ward)`,  
-    `met_request`, `emergency_handled(Ward,Patient)`, `human_resource_restitution(Ward,human_res_map)`, `human_resource_lending(human_res_map,From)`
+  - **Generates:** `human_resource_request(N,D,,R, Me, Patient)`,  `taking_charge_emergency`,  
+    `def_urgency(TP, WR, PT)`, `emergency_handled(Ward,Patient)`,`assign_rrt(Result,Patient,Me)` `human_resource_restore_ward(Old_N, Old_D, Old_R, New_N, New_D, New_R, Ward_instance)`, `human_resource_lending(Patient,Rec_Ward,Send_Ward)`
 
 - **Responsibilities:**
   - **Liveness:**  
-    `(alarm  → set_rrt → taking_charge_emergency → (emergency_handled(Ward,Patient)  ∧ (emergency_handled(Ward,Patient) ∨ (human_resource_restitution(Ward,human_res_map)  ∧ deacrease_available_equipe(human_resources_map))) )`
+    `(alarm  → def_urgency → assign_rrt → taking_charge_emergency → (emergency_handled(Ward,Patient)  ∧ (emergency_handled(Ward,Patient) ∨ (human_resource_restore_ward(Old_N, Old_D, Old_R, New_N, New_D, New_R, Ward_instance))) )`
   - **Safety:**  
-    Must never execute `set_rrt` if  `available_equipe(Ward)` is insufficient.  
-    All alarms must trigger a response action within a defined time frame.  
-    Ensure that all HR and MET requests are logged via Logger.
+    Must never execute `assign_rrt` if  `available_equipe(Ward)` is insufficient.  
+    All alarms must trigger a response action within a defined time frame.
 
 ---
 
 #### **Role Schema: HRCoordinator**
 
 - **Description:**  
-  Central coordinating agent that manages hospital-wide human resources and the Medical Emergency Team (MET).  
-  Receives `human_resource_request(human_res_map,From)` ,`human_resource_restitution(Ward,human_res_map)`, `emergency_handled(Ward,Patient)` or `met_request` messages from WardManagers, checks availability, and performs either `assign_human_resource`, forwards ,`human_resource_restitution(Ward,human_res_map)` to the lender ward and/or `assign_met`.  
+  Central coordinating agent that manages hospital-wide human resources requests.  
+  Receives `human_resource_request(Nurses,N,Doctors,D,Resuscitators,R, From, Patient)` ,`human_resource_lending(Patient,Receiver_Ward,Sender_Ward)`, `stop_send_req(Receiver_Ward)` or `human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward)` messages from Wards, checks availability, and performs either `send_req(Requests, From, Patient)`, forwards ,`human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward)` to the lender ward.  
   Updates the Logger with each assignment to ensure full traceability.
 
 - **Protocols and Activities:**  
-  `human_resource_request(human_res_map,From)`, `human_resource_reply(human_res_map,From)`, `human_resource_lending(human_res_map,From)`,  
-  `assign_human_resource`, `met_request`, `assign_met`, `met_assignment(Ward)`.
-
+  `configuration_phase`, `send_req(Requests, From, Patient)`
 - **Permissions:**
-  - **Reads:** `human_resource_request(human_res_map,From)`, `met_request`, `emergency_handled(Ward,Patient)`, `human_resource_restitution(Ward,human_res_map)`
-  - **Changes:** `met_status`
-  - **Generates:** `human_resource_reply(human_res_map,From)`, `met_assignment(Ward)`,  
-    `assign_met`, `human_resource_restore_ward(human_res_map)`
+  - **Reads:** `human_resource_request(Nurses,N,Doctors,D,Resuscitators,R, From, Patient)` ,`human_resource_lending(Patient,Receiver_Ward,Sender_Ward)`, `stop_send_req(Receiver_Ward)` or `human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward)`
+  - **Changes:** `sended_req`,`emergency_timer`,`pending_req`,`pending_req_timer`,`hr_requests`,`to_send`
+  - **Generates:** `human_resource_reply(N,D,R,Receiver_Ward,Sender_Ward,Patient)`, `human_resource_request(N,D,R,From,Patient)`,  
+    `human_resource_lending(N,D,R,Receiver_Ward,Sender_Ward,Patient)`, `human_resource_restore_ward(N,D,R)`,`human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward)`
 
 - **Responsibilities:**
   - **Liveness:**  
-    `(human_resource_request(human_res_map,From) → human_resource_reply(human_res_map,From)) ∨ (met_request → assign_met → met_assignment(Ward)) ∨ (human_resource_restitution(ward,human_res_map) → , human_resource_restore_ward(human_res_map))`
+    `(human_resource_request(N,D,R, From, Patient) → send_req(Requests, From, Patient) → human_resource_lending(Patient,Receiver_Ward,Sender_Ward) → human_resource_reply(N,D,R,Receiver_Ward,Sender_Ward,Patient))  (human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward) → , human_resource_restore_ward(N,D,R)`
   - **Safety:**  
-    Must avoid assigning already engaged METs or unavailable personnel.  
+    Must avoid assigning already engaged HRs or unavailable personnel.  
     Guarantee coherence between `human_resource_lending` and global staff availability across wards.  
-    Ensure all MET and HR dispatches are reported to the Logger.
 
 ---
 
@@ -109,7 +105,7 @@ Design and implement a multi-agent system in the DALI language for the detection
   `update_log_new_emergency`, `update_log_met_request`, `update_log_met_assignment`, `update_log_emergency_handled`.
 
 - **Permissions:**
-  - **Reads:** incoming event notifications from `HealthSensor`, `WardManager`, and `HRCoordinator`
+  - **Reads:** incoming event notifications from `HealthSensor`, `Ward`, and `HRCoordinator`
   - **Changes:** internal log file or database
   - **Generates:** persistent and timestamped log entries for each received event
 
@@ -130,19 +126,19 @@ Design and implement a multi-agent system in the DALI language for the detection
   - Minimize the latency time between the emergency accouring and the covering of the emergency.
   - Ensure the emergency covering and a smart dispatching of human resorces.
 - **Roles and Interactions**:
-  - `HealthSensor → WardManager`: sends alarm messages.
-  - `WardManager → HRCoordinator`: sends Human Resources requests and supplies and MET requests .
-  - `HRCoordinator → WardManager`: assign Human Resources and MET to an emergency, asks for Human Resources. 
+  - `HealthSensor → Ward`: sends alarm messages.
+  - `Ward → HRCoordinator`: sends Human Resources requests and supplies and MET requests .
+  - `HRCoordinator → Ward`: assign Human Resources and MET to an emergency, asks for Human Resources. 
   - `All → Logger`: record of all relevant events and actions: MET assignment, Human Resources requests, emergency covering.
 
 ### 1.3 Interaction Model (Protocol Table)
 
 | Protocol Name        | Initiator     | Responder     | Inputs               | Outputs                                      | Purpose                                                |
 | -------------------- | ------------- | ------------- | -------------------- | -------------------------------------------- | ------------------------------------------------------ |
-| `AlarmNotification`  | HealthSensor  | WardManager   | new vital values     | `alarm(Type,Val,Patient)`                    | Notify the WardManager of an abnormal vital parameter. |
-| `ResourceRequest`    | WardManager   | HRCoordinator | `human_resource_request(human_res_map,Ward)` | `human_resource_reply(human_res_map,From)`                      | Request human resources from HRCoordinator.            |
-| `METRequest`         | WardManager   | HRCoordinator | emergency data       | `met_request`                             | Request MET assignment for a critical event.           |
-| `ResourceRestitution`| WardManager | HRCoordinator | `human_resource_restitution(Ward,human_res_map)`| `human_resource_restore_ward(human_res_map)` | 
+| `AlarmNotification`  | HealthSensor  | Ward   | new vital values     | `alarm(Type,Val,Patient)`                    | Notify the Ward of an abnormal vital parameter. |
+| `ResourceRequest`    | Ward   | HRCoordinator | `human_resource_request(human_res_map,Ward)` | `human_resource_reply(human_res_map,From)`                      | Request human resources from HRCoordinator.            |
+| `METRequest`         | Ward   | HRCoordinator | emergency data       | `met_request`                             | Request MET assignment for a critical event.           |
+| `ResourceRestitution`| Ward | HRCoordinator | `human_resource_restitution(Ward,human_res_map)`| `human_resource_restore_ward(human_res_map)` | 
 | `LogUpdate`          | All           | Logger        | any event            | log entry                                    | Update system log with relevant data.                  |
 
 ### 1.4 Event Table
@@ -155,9 +151,9 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `new_O2(Value)`          | external | environment |
 | `new_HR(Value)`   | external | environment |
 | `new_respiratory_rate(Value)`   | external | environment |
-| `taking_charge_emergency`   | external | WardManager|
+| `taking_charge_emergency`   | external | Ward|
 
-#### WardManager
+#### Ward
 
 | Event                | Type     | Source      |
 |----------------------|----------|-------------|
@@ -165,8 +161,8 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `human_resource_reply(human_res_map,Ward)`   | external | HRCoordinator      |
 | `human_resource_request(human_res_map,Ward)`   | external | HRCoordinator      |
 | `human_resource_restore_ward(human_res_map)`   | external | HRCoordinator      |
-| `assign_rrt`  |internal  |WardManager  |
-| `taking_charge_emergency`  |internal  |WardManager  |
+| `assign_rrt`  |internal  |Ward  |
+| `taking_charge_emergency`  |internal  |Ward  |
 | `met_assignment`   | external | HRCoordinator       |
 
 
@@ -174,22 +170,22 @@ Design and implement a multi-agent system in the DALI language for the detection
 
 | Event                | Type     | Source |
 |----------------------|----------|-------------|
-| `human_resource_request(human_res_map,From)`|external  |WardManager  |
-| `human_resource_lending(human_res_map,From)`|external  |WardManager  |
-| `human_resource_restitution(Ward,human_res_map)` | external | WardManager |
-| `met_request`|external  |WardManager  |
+| `human_resource_request(human_res_map,From)`|external  |Ward  |
+| `human_resource_lending(human_res_map,From)`|external  |Ward  |
+| `human_resource_restitution(Ward,human_res_map)` | external | Ward |
+| `met_request`|external  |Ward  |
 | `assign_met`|internal  |HRCoordinator  |
 | `assign_human_resource`|internal  |HRCoordinator  |
-| `emergency_handled`|external  |WardManager  |
+| `emergency_handled`|external  |Ward  |
 
 #### Logger
 
 | Event                | Type     | Source |
 |----------------------|----------|-------------|
 | `new_emergency(Ward,Patient,Values)`|external|HealthSensor|
-| `met_request(Ward)`|external|WardManager|
+| `met_request(Ward)`|external|Ward|
 | `met_assignment(Ward)`|external|HRCoordinator|
-| `emergency_handled(Ward,Patient)`|external|WardManager|
+| `emergency_handled(Ward,Patient)`|external|Ward|
 
 
 ### 1.5 Action Table
@@ -201,11 +197,11 @@ Design and implement a multi-agent system in the DALI language for the detection
 | `alarm(Ward,Patient,Values)`   |Alerts the equipe of the ward about the new emergency |
 | `new_emergency(Ward,Patient,Values)` | After the detection of a new emergency the Logger will be updated  |
 
-#### WardManager
+#### Ward
 
 | Action                      | Description                                 |
 |-----------------------------|---------------------------------------------|
-| `set_rrt`   | Define the rapid rescue team (RRT) in orider to handle the emergency aid  |
+| `assign_rrt`   | Define the rapid rescue team (RRT) in orider to handle the emergency aid  |
 | `deacrease_available_equipe(human_resources_map)`   | After the RRT setting inside or outside the Ward decrease the available staff|
 | `increase_available_equipe(human_resources_map)`   | After the RRT setting inside or outside the Ward decrease the available staff|
 | `human_resource_request(human_res_map,From)`   | In case of insufficient specialized equipe the Ward Manager asks for some human resources from other wards |
@@ -221,8 +217,8 @@ Design and implement a multi-agent system in the DALI language for the detection
 | Action                      | Description                                 |
 |-----------------------------|---------------------------------------------|
 | `human_resource_reply(human_res_map,From)`   | Replies to the  Human Resource Request of the needy ward |
-| `human_resource_request(human_res_map,From)`   | Forwards to other WardManager the  Human Resource Request of the needy ward |
-| `human_resource_restore_ward(human_res_map)`   | Forwards to the lender WardManager the lended Human Resource Request from the needy ward |
+| `human_resource_request(human_res_map,From)`   | Forwards to other Ward the  Human Resource Request of the needy ward |
+| `human_resource_restore_ward(human_res_map)`   | Forwards to the lender Ward the lended Human Resource Request from the needy ward |
 | `met_assignment`   | Notify to the needy ward the MET assignment  |
 | `met_assignment(Ward)`| Notifies the Logger that the MET has been assigned|
 
@@ -243,7 +239,7 @@ Design and implement a multi-agent system in the DALI language for the detection
 | Agent Type         | Composed Roles | Instances                          | Notes                                           |
 | ------------------ | -------------- | ---------------------------------- | ----------------------------------------------- |
 | `SensorAgent`      | HealthSensor   | Multiple (1 per monitored patient) | Monitors vital parameters and generates alarms. |
-| `WardAgent`        | WardManager    | One per ward                       | Coordinates local emergency management.         |
+| `WardAgent`        | Ward    | One per ward                       | Coordinates local emergency management.         |
 | `CoordinatorAgent` | HRCoordinator  | Single instance                    | Central coordination of MET and HR.             |
 | `LoggerAgent`      | Logger         | Single instance                    | Central log persistence service.                |
 
@@ -252,9 +248,9 @@ Design and implement a multi-agent system in the DALI language for the detection
 
 | Service                  | Agent            | Inputs              | Outputs            | Preconditions               | Postconditions         |
 | ------------------------ | ---------------- | ------------------- | ------------------ | --------------------------- | ---------------------- |
-| `alarm`                  | SensorAgent      | vital parameters    | alarm message      | abnormal value detected | WardManager notified   |
+| `alarm`                  | SensorAgent      | vital parameters    | alarm message      | abnormal value detected | Ward notified   |
 | `new_emergency`          | SensorAgent      | alarm info          | log entry          | valid alarm                 | emergency logged       |
-| `set_rrt`                | WardAgent        | alarm info          | RRT assignment     | staff available             | RRT active             |
+| `assign_rrt`                | WardAgent        | alarm info          | RRT assignment     | staff available             | RRT active             |
 | `human_resource_request` | WardAgent        | needed staff map, ward ID  | HR request         | insufficient staff          | HRCoordinator notified, message forwarded to other Wards |
 | `human_resource_restitution` | WardAgent | Needed staff map, lender ward ID| Lender ward staff increasing | emergency_handled or met_assignment| Ward equipe descreases and the lender ward increase its equipe|
 | `met_request`            | WardAgent        | ---    | MET request        | emergency critical          | MET assigned           |
@@ -278,17 +274,17 @@ Design and implement a multi-agent system in the DALI language for the detection
 
   1. HealthSensor detects abnormal HR → triggers alarm(WardA, PatientX, Values).
 
-  2. WardManager receives the alarm and performs set_rrt.
+  2. Ward receives the alarm and performs assign_rrt.
 
-  3. If staff is insufficient, WardManager performs human_resource_request(human_res_map,WardA).
+  3. If staff is insufficient, Ward performs human_resource_request(human_res_map,WardA).
 
-  4. If the emergency is critical, WardManager also sends met_request.
+  4. If the emergency is critical, Ward also sends met_request.
 
-  5. HRCoordinator receives the met_request, performs assign_met, and notifies WardManager.
+  5. HRCoordinator receives the met_request, performs assign_met, and notifies Ward.
 
   6. All actions and assignments are sent to Logger using update_log_* actions.
 
-  7. When the emergency is resolved, WardManager executes emergency_handled(WardA,PatientX), if WardManager performed human_resource_request(human_res_map,WardA) performs human_resource_restitution(human_res_map,WardA), and notifies Logger.
+  7. When the emergency is resolved, Ward executes emergency_handled(WardA,PatientX), if Ward performed human_resource_request(human_res_map,WardA) performs human_resource_restitution(human_res_map,WardA), and notifies Logger.
 
 #### Trheshold Parameters
 
