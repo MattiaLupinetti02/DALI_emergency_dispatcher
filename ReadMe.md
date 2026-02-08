@@ -258,3 +258,182 @@ Design and implement a multi-agent system in the DALI language for the detection
 | Heart Rate        | < 40 bpm      | > 130 bpm      |
 | O₂ Saturation     | < 90%         | —              |
 
+
+classDiagram
+    %% Agent Base
+    class Agent {
+        -String instance_name
+        +shutdown()
+        +get_agent_name()
+    }
+
+    %% HealthSensor Agent
+    class HealthSensor {
+        -String instance_name
+        -String ward
+        -String patient_name
+        -int config
+        -int patient_taken_in_charge
+        -int heart_rate_threshold
+        -int oxygen_threshold
+        
+        +set_ward()
+        +set_p_name()
+        +final_config_output()
+        +new_hrE(Patient, HR)
+        +new_ooE(Patient, OO)
+        +critical_hr_out(Patient, HR)
+        +critical_oo_out(Patient, OO)
+        +taking_charge_emergencyE()
+        +emergency_handledE()
+        +pure_base_name(Path, Base)
+    }
+
+    %% HRCoordinator Agent
+    class HRCoordinator {
+        -int config
+        -int met
+        -List wards
+        -int equipe_read
+        -List hr_requests
+        -Map emergency_timer
+        
+        +read_wardsI()
+        +read_loop(Stream)
+        +human_resource_requestE(Nurses, N, Doctors, D, Resuscitators, R, From, Patient)
+        +send_req(Requests, From, Patient)
+        +send_req_to_wards(Wards, Request, From, Patient)
+        +tick(Requests, From, Patient, T)
+        +tickI(Requests, From, Patient, T)
+        +human_resource_lendingE(Patient, Receiver_Ward, Sender_Ward)
+        +human_resource_restitutionE(N, D, R, Patient, Receiver_Ward, Sender_Ward)
+        +stop_send_reqE(Receiver_Ward)
+        +get_value(Key, List, Default, Value)
+        +select_needy(List, Result)
+    }
+
+    %% Logger Agent
+    class Logger {
+        -String log_file
+        
+        +def_urgencyE(TP, WR, PT)
+        +taking_charge_emergencyE(Patient, Ward)
+        +end_emergencyE(Patient, Ward)
+        +human_resource_requestE(N, D, R, Rec_Ward, Patient)
+        +human_resource_lendingE(N, D, R, Receiver_Ward, Sender_Ward, Patient)
+        +human_resource_restitutionE(N, D, R, Patient, Receiver_Ward, Sender_Ward)
+        +human_resource_restore_wardE(Old_N, Old_D, Old_R, New_N, New_D, New_R, Ward)
+        +assign_rrtE(Result, Patient, From)
+        +logger(Text, Sender)
+        +def_timestamp(TimeStamp)
+        +atomic_list_concat(List, Atom)
+        +underscore_to_space(AtomIn, AtomOut)
+        +format_number(N, Formatted)
+    }
+
+    %% ValuesSimulator Agent
+    class ValuesSimulator {
+        -String agent
+        -Map patient_map
+        -int patient_map_init
+        
+        +read_patientsI()
+        +read_loop(Stream)
+        +send_random_hr(P, W, HR)
+        +send_random_o(P, W, OO)
+        +random_hr(HR)
+        +random_o(OO)
+        +define_dest(P, W, Dest)
+        +random_patient(Patient, Ward)
+    }
+
+    %% Ward Agent
+    class Ward {
+        -String instance_name
+        -String ward_name
+        -Map ward_equipe
+        -int equipe_read
+        -int config
+        -Map urgency
+        -List rrt_assigned
+        -List external_hr_request
+        -List waiting_hr
+        -List hr_req_received
+        -Map emergency_timer
+        -Map to_restore
+        -List lended_hr
+        
+        +get_agent_nameI()
+        +base_name(Path, Base)
+        +read_wardsI()
+        +read_loop(Stream)
+        +make_wardI()
+        +make_equipe(Staff, Values, Map)
+        +alarmE(TP, WR, PT)
+        +def_urgencyA(TP, WR, PT)
+        +assign_rrtI(Type, Ward, Patient)
+        +checkRRT(RRT, Equipe, Needy)
+        +taking_charge_emergencyI(Patient, Sensor)
+        +tickI(Patient, T)
+        +end_emergencyA(Patient)
+        +human_resource_requestE(Nurses, N, Doctors, D, Resuscitators, R, Rec_Ward, Patient)
+        +human_resource_replyE(N, D, R, Receiver_Ward, Sender_Ward, Patient)
+        +human_resource_restore_wardE(N, D, R)
+        +make_healthsensor_name(Patient, SensorName)
+        +get_value(Key, List, Default, Value)
+        +kv_to_need(KV, Need)
+        +map_diff(Map1, Map2, Diff)
+        +map_sum(Map1, Map2, Sum)
+        +load_rrt(RRT, Equipe, NewEquipe)
+        +relax_rrt(RRT, Equipe, NewEquipe)
+        +select_needy(List, Result)
+        +add_external_equipe(List)
+    }
+
+    %% Data Types and Messages
+    class Message {
+        <<enumeration>>
+        alarm(Type, Ward, Patient)
+        send_message(Content, Sender)
+        new_hr(Patient, HR)
+        new_oo(Patient, OO)
+        human_resource_request(Role1, N, Role2, D, Role3, R, From, Patient)
+        human_resource_reply(N, D, R, Receiver, Sender, Patient)
+        human_resource_lending(N, D, R, Receiver, Sender, Patient)
+        human_resource_restitution(N, D, R, Patient, Receiver, Sender)
+        human_resource_restore_ward(N, D, R)
+        stop_send_req(Ward)
+        taking_charge_emergency
+        emergency_handled
+        def_urgency(Type, Ward, Patient)
+        assign_rrt(Result, Patient, From)
+    }
+
+    class DataRecord {
+        <<record>>
+        reparto(Name, StaffList)
+        patient(Name, Ward)
+    }
+
+    %% Relationships
+    HealthSensor --|> Agent
+    HRCoordinator --|> Agent
+    Logger --|> Agent
+    ValuesSimulator --|> Agent
+    Ward --|> Agent
+    
+    HealthSensor --> Message : sends/receives
+    HRCoordinator --> Message : sends/receives
+    Logger --> Message : sends/receives
+    ValuesSimulator --> Message : sends/receives
+    Ward --> Message : sends/receives
+    
+    HRCoordinator --> DataRecord : reads "reparti" file
+    ValuesSimulator --> DataRecord : reads "pazienti" file
+    Ward --> DataRecord : reads "reparti" file
+    
+    Ward --> HealthSensor : communicates with
+    Ward --> HRCoordinator : communicates with
+    HRCoordinator --> Ward : coordinates wards
+    Logger --> AllAgents : logs all activities
+    
