@@ -1,3 +1,4 @@
 % pattern -> patient(Patient_name,Patient_ward)
-patient(p1,icu).
-patient(p2,icu).
+patient(p5,surgery).
+patient(p2,surgery).
+patient(p1,cardiology).

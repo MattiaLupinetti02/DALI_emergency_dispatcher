@@ -1,0 +1,22 @@
+[2026-02-08 14:47:35] [Ward_cardiology] ===== New Emergency for the patient p1 in the Ward cardiology : high_hr =====
+[2026-02-08 14:47:36] [Ward_cardiology] RRT regularly assigned to the patient p1
+[2026-02-08 14:47:37] [Ward_cardiology] Emergency for patient p1 taken in charge
+[2026-02-08 14:47:45] [Ward_surgery] ===== New Emergency for the patient p5 in the Ward surgery : high_hr =====
+[2026-02-08 14:47:47] [Ward_surgery] RRT regularly assigned to the patient p5
+[2026-02-08 14:47:48] [Ward_surgery] ===== New Emergency for the patient p2 in the Ward surgery : low_o2 =====
+[2026-02-08 14:47:48] [Ward_surgery] Emergency for patient p5 taken in charge
+[2026-02-08 14:47:48] [Ward_surgery] Not enough HR in the Ward for the emergency of the patient p2
+[2026-02-08 14:47:55] [HRCoordinator_instance] HR request from Ward surgery of Nurses-2 Doctors-1 Resuscitators-1
+[2026-02-08 14:47:59] [Ward_cardiology] [END EMERGENCY]: the emergency of p1 has been correctly handled
+[2026-02-08 14:48:01] [HRCoordinator_instance] HR lended from Ward cardiology to Ward surgery: Nurses-2 Doctors-1 Resuscitators-1
+[2026-02-08 14:48:01] [Ward_surgery] Emergency for patient p2 taken in charge
+[2026-02-08 14:48:13] [Ward_surgery] [END EMERGENCY]: the emergency of p2 has been correctly handled
+[2026-02-08 14:48:14] [HRCoordinator_instance] HR restitution from Ward surgery to Ward cardiology: Nurses-2 Doctors-1 Resuscitators-1
+[2026-02-08 14:48:19] [Ward_surgery] [END EMERGENCY]: the emergency of p5 has been correctly handled
+[2026-02-08 14:48:23] [Ward_cardiology] Restoring lended HR : Nurses-2 Doctors-1 Resuscitators-1 current equipe Nurses-4 Doctors-2 Resuscitators-2
+[2026-02-08 14:48:23] [Ward_cardiology] ===== New Emergency for the patient p1 in the Ward cardiology : low_o2 =====
+[2026-02-08 14:48:23] [Ward_surgery] ===== New Emergency for the patient p2 in the Ward surgery : low_o2 =====
+[2026-02-08 14:48:23] [Ward_surgery] RRT regularly assigned to the patient p2
+[2026-02-08 14:48:23] [Ward_cardiology] RRT regularly assigned to the patient p1
+[2026-02-08 14:48:24] [Ward_surgery] Emergency for patient p2 taken in charge
+[2026-02-08 14:48:24] [Ward_cardiology] Emergency for patient p1 taken in charge

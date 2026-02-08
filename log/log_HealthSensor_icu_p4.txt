@@ -1,0 +1,4 @@
+send_message(send_message(alarm(low_o2,icu,p4),HealthSensor_icu_p4))
+send_message(send_message(alarm(low_o2,icu,p4),HealthSensor_icu_p4))
+send_message(send_message(alarm(high_hr,icu,p4),HealthSensor_icu_p4))
+send_message(send_message(alarm(low_o2,icu,p4),HealthSensor_icu_p4))

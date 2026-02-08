@@ -6,6 +6,11 @@ patient_map([]).
 patient_map_init(0).
 
 
+shutdownE :>
+    write('Shutting down agent...'), nl,
+    halt.
+
+
 read_patientsI :>   open('pazienti', read, Stream),
                     read_loop(Stream),
                     close(Stream),

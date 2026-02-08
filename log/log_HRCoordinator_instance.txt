@@ -1,0 +1,6 @@
+send_message(send_message(human_resource_request(2,1,1,Ward_surgery,p2),HRCoordinator_instance))
+send_message(send_message(human_resource_request(Nurses,2,Doctors,1,Resuscitators,1,Ward_surgery,p2),HRCoordinator_instance))
+send_message(send_message(human_resource_reply(2,1,1,Ward_surgery,Ward_cardiology,p2),HRCoordinator_instance))
+send_message(send_message(human_resource_lending(2,1,1,Ward_surgery,Ward_cardiology,p2),HRCoordinator_instance))
+send_message(send_message(human_resource_restore_ward(2,1,1),HRCoordinator_instance))
+send_message(send_message(human_resource_restitution(2,1,1,p2,Ward_surgery,Ward_cardiology),HRCoordinator_instance))

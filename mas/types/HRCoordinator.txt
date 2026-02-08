@@ -33,26 +33,35 @@ read_wards :- equipe_read(A), A == 0. read_loop(Stream) :-
                                                             ),
                                                             read_loop(Stream) ).
 
-
+:- dynamic pending_req/2.
+:- dynamic pending_req_timer/4.
 :- dynamic hr_requests/1.
+:- dynamic to_send/3.
 hr_requests([]).
 select_needy(List, Result) :-
                                 findall(Key-Value, (member(Key-Value, List), Value > 0), Result).
 
 human_resource_requestE(Nurses,N,Doctors,D,Resuscitators,R, From, Patient) :>
                                                                                 equipe_read(A), A == 1,
+                                                                                write('Request for HR for the patient: '), write(Patient), write(' from the ward: '), write(From), nl,
                                                                                 List = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],
-                                                                                select_needy(List, Result), hr_requests(Old),
+                                                                                hr_requests(Old),
+                                                                                \+member(From-[Patient-Vals],Old ),
+                                                                                select_needy(List, Result),
                                                                                 append(Old, [From-[Patient-Result]], Requests),
+                                                                                write('Current requests: '),write(Requests),nl,
                                                                                 retractall(hr_requests(_)),
                                                                                 assertz(hr_requests(Requests)),
+
                                                                                 send_req(Requests, From, Patient),
+                                                                            
+                                        
                                                                                 messageA('Logger',
                                                                                     send_message(
                                                                                         human_resource_request(N,D,R,From,Patient),
                                                                                         'HRCoordinator_instance')
                                                                                     ),
-                                                                                assertz(emergency_timer(From,Patient,2)),
+                                                                                
                                                                                 write('Request timeout started for HR: '),write(List),
                                                                                 write('for the patient: '),write(Patient),write(' from the ward: '),
                                                                                 write(From),nl.
@@ -60,38 +69,85 @@ send_req(Requests, From, Patient) :-
                                     (   member(From-Value, Requests), 
                                         member(Patient-Requested_equipe, Value) ->
                                         wards(Wards),
-                                        send_req_to_wards(Wards, Requested_equipe, From, Patient) 
+                                        assertz(to_send(Patient,From,Wards)),
+                                        assertz(sended_req(Receiver_Ward))                                                                    
                                         ;true 
                                     ). 
 
+send_req_to_wards(Ward,Requested_equipe, From,Patient) :-   
+                                                            
+                                                            to_send(Patient,From,Wards),
+                                                            write(Wards),
+                                                            ( Wards \= [] ->
+                                                                last(Wards,Ward),
+                                                                select(Ward,Wards,Temp),
+                                                                retract(to_send(Patient,From,Wards)),
+                                                                assertz(to_send(Patient,From,Temp)),
+                                                                \+pending_req_timer(From,Ward,Patient,_),
+                                                                hr_requests(Requests),
+                                                                member(From-Values,Requests),
+                                                                member(Patient-Requested_equipe,Values)
+                                                            ;   (
+                                                                    assertz(emergency_timer(From,Patient,2)),nl,retractall(to_send(Patient,From,_))
+                                                                    
+                                                                )
+                                                            ).
 
-send_req_to_wards([], _, _,_).
-send_req_to_wards([Ward | Tail], Request, From, Patient) :- ground(Request),
+
+send_req_to_wardsI(Ward, Request, From, Patient) :> ground(Request),
+                                                            
                                                             ground(From),
                                                             atom_concat('Ward_', Ward, Dest),
+                                                            write('Dest: '),write(Dest),nl,
+                                                            write('From: '),write(From),nl,
                                                             ( 
                                                                 Dest == From -> true 
                                                                 ;   get_value('Nurses',Request,0,N),
                                                                     get_value('Doctors',Request,0,D),
                                                                     get_value('Resuscitators',Request,0,R),
-                                                                    write('Sending HR request to: '),write(Dest),nl,
+                                                                    assertz(pending_req_timer(From,Dest,Patient,3)),
+
                                                                     messageA(
                                                                                 Dest,
                                                                                 send_message( human_resource_request('Nurses',N,'Doctors',D,'Resuscitators',R, From, Patient),
                                                                                 'HRCoordinator_instance' ) 
+
                                                                             ) 
-                                                            ),send_req_to_wards(Tail, Request, From, Patient).
+                                                            ).
 
 :- dynamic emergency_timer/3.
+:- dynamic sended_req/1.
 
-tick(Requests, From, Patient,T) :-  emergency_timer(From,Patient,T),
+sending_tick(Requests, From, Dest,Patient,T) :- hr_requests(Requests),pending_req_timer(From,Dest,Patient,T).
+
+sending_tickI(Requests, From, Dest,Patient,T):>
+    
+    write('[sending_tick] Patient '), write(Patient),
+    write(' remaining: '), write(T), nl,
+    write(From),nl,write(Requests),nl,
+    (
+        T > 1 ->
+            T1 is T - 1,
+            retractall(pending_req_timer(From,Dest,Patient,_)),
+            assertz(pending_req_timer(From,Dest,Patient,T1))
+        ;
+            
+            member(From-P_list,Requests),
+            write(pending_req_timer(From,Dest,Patient,T)),nl,
+            write(send_req(Requests, From, Patient)),nl,
+            retract(pending_req_timer(From,Dest,Patient,_)),
+            write('[END TIMEOUT SENDING REQUEST] for the patient: '),write(Patient),
+            send_req(Requests, From, Patient)
+    ).
+
+timeout_tick(Requests, From, Patient,T) :-  emergency_timer(From,Patient,T),
                                     hr_requests(Requests),
                                     member(From-Value,Requests),
                                     member(Patient-Req,Value).
 
-tickI(Requests, From, Patient,T):>
+timeout_tickI(Requests, From, Patient,T):>
     
-    write('[TICK] Patient '), write(Patient),
+    write('[timeout_tick] Patient '), write(Patient),
     write(' remaining: '), write(T), nl,
     (
         T > 1 ->
@@ -110,13 +166,17 @@ get_value(Chiave, ListaCoppie, Default, Valore) :- (member(Chiave-Valore, ListaC
 
 human_resource_lendingE(Patient,Receiver_Ward,Sender_Ward) :>   
                                                                 retractall(emergency_timer(Receiver_Ward,Patient,_)),
+                                                                retractall(to_send(Patient,Receiver_Ward,_)),
+                                                                retractall(pending_req_timer(Receiver_Ward,_,Patient,_)),
                                                                 hr_requests(Requests),
                                                                 member(Receiver_Ward-Value, Requests), 
                                                                 member(Patient-Requested_equipe, Value),
+                                                                select(Patient-Requested_equipe, Value,New_req_list),
                                                                 write('=====HR lended by Ward: '),write(Sender_Ward),write(' to '),write(Receiver_Ward),write('====='),nl,
                                                                 get_value('Nurses',Requested_equipe,0,N),
                                                                 get_value('Doctors',Requested_equipe,0,D),
                                                                 get_value('Resuscitators',Requested_equipe,0,R),
+
                                                                 messageA(
                                                                     Receiver_Ward,
                                                                     send_message(
@@ -130,13 +190,24 @@ human_resource_lendingE(Patient,Receiver_Ward,Sender_Ward) :>
 
 human_resource_restitutionE(N,D,R,Patient,Receiver_Ward,Sender_Ward) :> 
                                                                         hr_requests(Req),
+
                                                                         write('=====HR restitution to the Ward to '),write(Sender_Ward),write(' from '),write(Receiver_Ward),write('====='),nl,
+                                                                        write(Receiver_Ward),nl,
+                                                                        
                                                                         member(Receiver_Ward-Ward_receiver_map, Req),
+                                                                        
+                                                                        
                                                                         select(Patient-_,Ward_receiver_map,New_req_list),
                                                                         retractall(hr_requests(Req)),
                                                                         assertz(hr_requests(New_req_list)),
+                                                                        
                                                                         write('HR again out of the ward: '),write(New_req_list),nl,
+                                                                        write('====== RELEASED: '), write('N ' ), write(N), write(' D '), write(D), write(' R '), write(R),nl,
+                                                                        
                                                                         messageA(Sender_Ward,send_message(human_resource_restore_ward(N,D,R), 'HRCoordinator_instance')),
+                                                                        
+                                                                        write('====== From '),write(Sender_Ward),write(' ======'),nl,
+                                                                        retractall(sended_req(Receiver_Ward)),
                                                                         messageA('Logger',
                                                                             send_message(
                                                                                 human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward),
@@ -144,12 +215,17 @@ human_resource_restitutionE(N,D,R,Patient,Receiver_Ward,Sender_Ward) :>
                                                                         ).
 
 
-stop_send_reqE(Receiver_Ward):> hr_requests(Req),
-                                write(Req),nl,
-                                member(Receiver_Ward-Ward_receiver_map, Req),
-                                select(Receiver_Ward-Ward_receiver_map, Req,New_req_list),
-                                retractall(hr_requests(Req)),
-                                assertz(hr_requests(New_req_list)),
-                                write(New_req_list),nl,
-                                retractall(emergency_timer(Receiver_Ward,_,_)),
-                                write('diocanide'),nl.
+stop_send_reqE(Receiver_Ward):> 
+                                hr_requests(Req),
+                                (sended_req(Receiver_Ward)->
+                                    write('A HR request for '),write(Receiver_Ward),write(' already sended - impossible to release other request from this ward'),nl
+
+                                    ;
+                                    
+                                    write('All HR request for '),write(Receiver_Ward),write(' have been released '),nl,
+                                    member(Receiver_Ward-Ward_receiver_map, Req),
+                                    select(Receiver_Ward-Ward_receiver_map, Req,New_req_list),
+                                    retractall(hr_requests(Req)),
+                                    assertz(hr_requests(New_req_list)),
+                                    retractall(emergency_timer(Receiver_Ward,_,_))
+                                ).

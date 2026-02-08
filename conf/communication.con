@@ -1,6 +1,5 @@
 
 
-
 told(From,send_message(M)):-true.
 told(Ag,execute_proc(_)):-true.
 told(Ag,query_ref(_,_)):-true.
@@ -17,6 +16,7 @@ told(Ag,inform(_,_),70):-true.
 told(Ag,inform(_),70):-true.
 told(Ag,reply(_)):-true.
 told(_,refuse(_,Xp)):-functor(Xp,Fp,_),Fp=agree.
+
 
 tell(To,From,send_message(M)):-true.
 tell(To,_,confirm(_)):-true.

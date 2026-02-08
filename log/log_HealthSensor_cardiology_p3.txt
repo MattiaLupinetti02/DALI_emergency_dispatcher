@@ -1,0 +1,4 @@
+send_message(send_message(alarm(low_o2,cardiology,p3),HealthSensor_cardiology_p3))
+send_message(send_message(alarm(high_hr,cardiology,p3),HealthSensor_cardiology_p3))
+send_message(send_message(alarm(low_o2,cardiology,p3),HealthSensor_cardiology_p3))
+send_message(send_message(alarm(low_o2,cardiology,p3),HealthSensor_cardiology_p3))

@@ -1,1 +1,0 @@
-agent('work/HealthSensor_icu_p1','HealthSensor_icu_p1','no',italian,['conf/communication'],['/project/prog_env/DALI/src/communication_fipa','/project/prog_env/DALI/src/learning','/project/prog_env/DALI/src/planasp'],'no','/project/prog_env/DALI/src/onto/dali_onto.txt',[]).
