@@ -321,11 +321,7 @@ end_emergencyA(Patient) :-
     
     urgency(Type,Ward,Patient),
     retractall(urgency(_,_,Patient)),
-    
-   
-    
     messageA('HRCoordinator_instance',send_message(stop_send_req(My_ward_name),My_ward_name)),
-    write('All the patient wating for external HR cancel the requests'),nl,
     messageA(SensorName,send_message(emergency_handled,My_ward_name)),
     messageA('Logger',send_message(emergency_handled(Patient,My_ward_name),My_ward_name)),
     to_restore(N,D,R,Patient,Receiver_Ward,Sender_Ward), 

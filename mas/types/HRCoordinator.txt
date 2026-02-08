@@ -189,11 +189,11 @@ human_resource_lendingE(Patient,Receiver_Ward,Sender_Ward) :>
                                                                 ).
 
 human_resource_restitutionE(N,D,R,Patient,Receiver_Ward,Sender_Ward) :> 
-                                                                        hr_requests(Req),
+                                                                        
 
                                                                         write('=====HR restitution to the Ward to '),write(Sender_Ward),write(' from '),write(Receiver_Ward),write('====='),nl,
                                                                         write(Receiver_Ward),nl,
-                                                                        
+                                                                        hr_requests(Req),
                                                                         member(Receiver_Ward-Ward_receiver_map, Req),
                                                                         
                                                                         
