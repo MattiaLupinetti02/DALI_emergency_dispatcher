@@ -507,3 +507,15 @@ The configuration phase in every agent allow to define dynamically the system di
 In the configuration phase of every instace of `Ward` is read its own instance name, the equipe of its own ward defined in `reparti`.
 In the configuration phase of every instace of `HealthSensor` is read its own instance name which allow to the instance define its ward through reading the pazienti file.
 At the end the instance of HRCoordinator reads all the defined wards.
+
+### 4 Screenshoots
+- ValuesSimulator:
+  ![ValuesSimulator](./ValuesSimulator.png)
+- HRCoordinator:
+  ![HRCoordinator](./HRCoordinator.png)
+- HealthSimulator:
+  ![HealthSimulator](./HealthSimulator)
+- Logger:
+  ![Logger](./Logger)
+- Ward
+  ![Ward](./Ward.png)
