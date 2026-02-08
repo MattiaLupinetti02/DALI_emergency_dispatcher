@@ -173,10 +173,14 @@ Design and implement a multi-agent system in the DALI language for the detection
 
 | Event                | Type     | Source |
 |----------------------|----------|-------------|
-| `new_emergency(Ward,Patient,Values)`|external|HealthSensor|
-| `met_request(Ward)`|external|Ward|
-| `met_assignment(Ward)`|external|HRCoordinator|
+| `def_urgency(TP, WR, PT)`|external|Ward|
+| `taking_charge_emergency(Patient,Ward)`|external|Ward|
+| `human_resource_request(N,D,R,Rec_Ward,Patient)`|external|HRCoordinator|
+| `human_resource_lending(N,D,R,Receiver_Ward,Sender_Ward,Patient)`|external|HRCoordinator|
+| `human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward)`|external|HRCoordinator|
 | `emergency_handled(Ward,Patient)`|external|Ward|
+| `assign_rrt(Result,Patient,From)`|external|Ward|
+| `human_resource_restore_wardE(Old_N, Old_D, Old_R, New_N, New_D, New_R, Ward)`|external|Ward|
 
 
 ### 1.5 Action Table
