@@ -493,3 +493,17 @@ sequenceDiagram
     HRCoordinator --> Ward : coordinates wards
     Logger --> AllAgents : logs all activities
 ```
+---
+### 3 configuration files
+
+The agents Ward and HealthSensor have an instance name with a defined pattern:
+- `HealthSensor`: `HealthSensor_<wardname>_<patientID>` (Note that the patientID must be univocal)
+- `Ward`: `Ward_<wardname>` (Note that <wardname> must be univocal)
+
+The configuration phase in every agent allow to define dynamically the system dimension through the reparti and pazienti file:
+- `pazienti`: contains propositions with the pattern -> `patient(Patient_name,Patient_ward)`.
+- `reparti`: contains proposition with the pattern -> `ward(patient_ward, list_number_equipe)` equipe in this order-> `'nurses','doctors','resuscitators'`
+
+In the configuration phase of every instace of `Ward` is read its own instance name, the equipe of its own ward defined in `reparti`.
+In the configuration phase of every instace of `HealthSensor` is read its own instance name which allow to the instance define its ward through reading the pazienti file.
+At the end the instance of HRCoordinator reads all the defined wards.
