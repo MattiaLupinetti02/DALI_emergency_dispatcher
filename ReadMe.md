@@ -102,19 +102,18 @@ Design and implement a multi-agent system in the DALI language for the detection
   Receives updates from all other agents and stores them in a structured format.
 
 - **Protocols and Activities:**  
-  `update_log_new_emergency`, `update_log_met_request`, `update_log_met_assignment`, `update_log_emergency_handled`.
+  `atomic_list_concat`, `underscore_to_space`, `logger`, `format_number`, `def_timestamp`.
 
 - **Permissions:**
-  - **Reads:** incoming event notifications from `HealthSensor`, `Ward`, and `HRCoordinator`
-  - **Changes:** internal log file or database
-  - **Generates:** persistent and timestamped log entries for each received event
+  - **Reads:** incoming event notifications from `Ward`, and `HRCoordinator`
+  - **Changes:** internal log.txt file 
+  - **Generates:** persistent and timestamped log entries for each received event in log.txt file
 
 - **Responsibilities:**
   - **Liveness:**  
-    `(receive_event → update_log_new_emergency → update_log_met_request → update_log_met_assignment → update_log_emergency_handled)`
+    `(receive_event → define output → update log.txt`
   - **Safety:**  
-    Guarantee one log entry per unique event ID.  
-    Ensure data persistence and recovery under network or system failures.  
+    Guarantee one log entry per unique timestamp.  
     Maintain temporal order of logged events for accurate reconstruction.
 
 ---
@@ -131,27 +130,18 @@ Design and implement a multi-agent system in the DALI language for the detection
   - `HRCoordinator → Ward`: assign Human Resources and MET to an emergency, asks for Human Resources. 
   - `All → Logger`: record of all relevant events and actions: MET assignment, Human Resources requests, emergency covering.
 
-### 1.3 Interaction Model (Protocol Table)
-
-| Protocol Name        | Initiator     | Responder     | Inputs               | Outputs                                      | Purpose                                                |
-| -------------------- | ------------- | ------------- | -------------------- | -------------------------------------------- | ------------------------------------------------------ |
-| `AlarmNotification`  | HealthSensor  | Ward   | new vital values     | `alarm(Type,Val,Patient)`                    | Notify the Ward of an abnormal vital parameter. |
-| `ResourceRequest`    | Ward   | HRCoordinator | `human_resource_request(human_res_map,Ward)` | `human_resource_reply(human_res_map,From)`                      | Request human resources from HRCoordinator.            |
-| `METRequest`         | Ward   | HRCoordinator | emergency data       | `met_request`                             | Request MET assignment for a critical event.           |
-| `ResourceRestitution`| Ward | HRCoordinator | `human_resource_restitution(Ward,human_res_map)`| `human_resource_restore_ward(human_res_map)` | 
-| `LogUpdate`          | All           | Logger        | any event            | log entry                                    | Update system log with relevant data.                  |
-
-### 1.4 Event Table
+### 1.3 Event Table
 
 #### HealthSensor
 
 | Event                | Type     | Source      |
 |----------------------|----------|-------------|
-| `new_systolic_pressure(Value)`        | external | environment |
-| `new_O2(Value)`          | external | environment |
-| `new_HR(Value)`   | external | environment |
-| `new_respiratory_rate(Value)`   | external | environment |
+| `new_*(Patient,Value)`          | external | ValuesSimulator |
 | `taking_charge_emergency`   | external | Ward|
+| `emergency_handled`   | external | Ward|
+| `get_agent_name`   | Internal | HealthSensor|
+| `set_ward`   | Internal | HealthSensor|
+| `final_config_output`   | Internal | HealthSensor|
 
 #### Ward
 
@@ -170,13 +160,14 @@ Design and implement a multi-agent system in the DALI language for the detection
 
 | Event                | Type     | Source |
 |----------------------|----------|-------------|
-| `human_resource_request(human_res_map,From)`|external  |Ward  |
-| `human_resource_lending(human_res_map,From)`|external  |Ward  |
-| `human_resource_restitution(Ward,human_res_map)` | external | Ward |
-| `met_request`|external  |Ward  |
-| `assign_met`|internal  |HRCoordinator  |
-| `assign_human_resource`|internal  |HRCoordinator  |
-| `emergency_handled`|external  |Ward  |
+| `human_resource_request(N,D,R, From, Patient)`|external  |Ward  |
+| `human_resource_lending(Patient,Receiver_Ward,Sender_Ward)`|external  |Ward  |
+| `human_resource_restitution(N,D,R,Patient,Receiver_Ward,Sender_Ward)` | external | Ward |
+| `sending_tick` | internal | HRCoordinator |
+| `timeout_tick` | internal | HRCoordinator |
+| `send_req_to_wards`|internal  |HRCoordinator  |
+| `read_wards`|internal  |HRCoordinator  |
+| `stop_send_req(Receiver_Ward)`|external  |Ward  |
 
 #### Logger
 
