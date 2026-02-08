@@ -514,8 +514,8 @@ At the end the instance of HRCoordinator reads all the defined wards.
 - HRCoordinator:
   ![HRCoordinator](./HRCoordinator.png)
 - HealthSimulator:
-  ![HealthSimulator](./HealthSimulator)
+  ![HealthSensor](./HealthSensor)
 - Logger:
-  ![Logger](./Logger)
+  ![Logger](./Logger.png)
 - Ward
-  ![Ward](./Ward.png)
+  ![Ward](./ward.png)
