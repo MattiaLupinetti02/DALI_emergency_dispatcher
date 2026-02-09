@@ -1,7 +1,7 @@
 # Multi-Agent System for Emergency Handling and Resources Dispatching in a smart-hospital
 
 ## Objective
-Design and implement a multi-agent system in the DALI language for the detection and coordinated management of emergency as Cardiac Arrest, Acute Respiratory Distress and Severe Cardiovascular Instability.   
+Design and implement a multi-agent system in the DALI language (DALI repository available [here](https://github.com/AAAI-DISIM-UnivAQ/DALI.git) ) for the detection and coordinated management of emergency as Cardiac Arrest, Acute Respiratory Distress and Severe Cardiovascular Instability.   
 
 ---
 
@@ -579,7 +579,7 @@ In the same directory of the `Dockerfile` run `docker build -t <image_name> .` t
 Enter the container with `docker start -ai <container-name>`, go to the previous directory, enter the `<sictus_prologue_linux_installer>` folder and run `./InstallSICStus`.
 During the installation phase will when is asked to you where install sicstus put `/proj_env`.
 
-The DALI repository is available on `https://github.com/AAAI-DISIM-UnivAQ/DALI.git`.
+
 
 
 
