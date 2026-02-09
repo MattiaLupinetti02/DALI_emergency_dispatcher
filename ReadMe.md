@@ -572,6 +572,7 @@ RUN apt-get update && apt-get install -y expect
 CMD ["/bin/bash"]
 
 ```
+(Note: `<sictus_prologue_linux_installer>.tar` have to be in the same directory of `Dockerfile`)
 
 In the same directory of the `Dockerfile` run `docker build -t <image_name> .` to create the image and run `docker create -it --name <container_name> <image_name>`.
 
