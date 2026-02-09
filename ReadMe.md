@@ -579,5 +579,7 @@ In the same directory of the `Dockerfile` run `docker build -t <image_name> .` t
 Enter the container with `docker start -ai <container-name>`, go to the previous directory, enter the `<sictus_prologue_linux_installer>` folder and run `./InstallSICStus`.
 During the installation phase will when is asked to you where install sicstus put `/proj_env`.
 
+The DALI repository is available on `https://github.com/AAAI-DISIM-UnivAQ/DALI.git`.
+
 
 
