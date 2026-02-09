@@ -63,7 +63,7 @@ emergency_handledE(Patient,Ward) :> atom_concat('[END EMERGENCY]: the_emergency_
                                 atom_concat(Temp,'_has_been_correctly_handled',Temp2),
                                 underscore_to_space(Temp2,Text),
                                 logger(Text,Ward).
-porcodioE :> write('porcodio').
+shutdownE(Name) :> atom_concat('Agent: ', Name,Temp), atom_concat(Temp, ' killed', Text), logger(Text,Name).
 
 human_resource_requestE(N,D,R,Rec_Ward,Patient):>   write('human_resource_request'),nl,
                                                     Req_map = ['Nurses'-N,'Doctors'-D,'Resuscitators'-R],

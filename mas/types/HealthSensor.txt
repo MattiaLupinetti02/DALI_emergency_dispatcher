@@ -71,7 +71,7 @@ set_p_nameI :>
 :- dynamic config/1.
 config(0).
 final_config_output :- config(A),A == 0, p_name(Pname), Pname \= 'None', ward(Wname), Wname \= 'None',retractall(config(_)), assertz(config(1)).
-final_config_outputI :> write('End configuration').
+final_config_outputI :> write('End configuration'),nl.
 
 
 
