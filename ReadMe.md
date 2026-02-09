@@ -519,3 +519,64 @@ At the end the instance of HRCoordinator reads all the defined wards.
   ![Logger](./Logger.png)
 - Ward
   ![Ward](./ward.png)
+
+
+## 5 Installation
+First of all create your folder where install this projet, we will call this folder `proj_env`. Since DALI is built upon the SICStus Prolog interpreter, for which you need a valid license, you need to install sictus preferably the 4.6.0 version because DALI has been tested on it.
+
+In order to guarantee repeatability i developed this project in a docker context, create your image through the following file `./proj_env/Dockerfile` :
+
+```
+FROM debian:bullseye
+
+RUN apt-get update && apt-get install -y -o Acquire::Retries=10 \
+    build-essential \
+    libx11-dev \
+    libxt-dev \
+    libxext-dev \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# <sictus_prologue_linux_installer>.tar must be located in the same directory of Dockerfile
+COPY <sictus_prologue_linux_installer>.tar ./
+
+RUN tar -xvf <sictus_prologue_linux_installer>.tar
+
+RUN rm <sictus_prologue_linux_installer>.tar
+
+
+RUN apt-get update && apt-get install -y -o Acquire::Retries=10 \
+    build-essential \
+    libx11-dev \
+    libxt-dev \
+    libxext-dev \
+    unzip \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /proj_env
+
+RUN git clone https://github.com/AAAI-DISIM-UnivAQ/DALI.git
+RUN git clone https://github.com/MattiaLupinetti02/DALI_emergency_dispatcher.git
+
+
+RUN mv ./DALI/src ./src
+
+RUN apt-get update && apt-get install -y iputils-ping
+RUN apt update && apt install -y tmux
+RUN apt update && apt install -y nano
+RUN apt update && apt install -y dos2unix
+RUN apt-get update && apt-get install -y expect
+
+CMD ["/bin/bash"]
+
+```
+
+In the same directory of the `Dockerfile` run `docker build -t <image_name> .` to create the image and run `docker create -it --name <container_name> <image_name>`.
+
+Enter the container with `docker start -ai <container-name>`, go to the previous directory, enter the `<sictus_prologue_linux_installer>` folder and run `./InstallSICStus`.
+During the installation phase will when is asked to you where install sicstus put `/proj_env`.
+
+
+
