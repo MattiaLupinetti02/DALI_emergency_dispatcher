@@ -26,7 +26,7 @@ fi
 # tmux new-session -d -s DALI_session top
 
 # Define paths and variables
-SICSTUS_HOME=/prog_env
+SICSTUS_HOME=/proj_env
 MAIN_HOME=/proj_env/DALI_emergency_dispatcher
 DALI_HOME=/proj_env/DALI/src
 CONF_DIR=conf
@@ -35,7 +35,6 @@ WAIT="ping -c 3 127.0.0.1"
 INSTANCES_HOME=mas/instances
 TYPES_HOME=mas/types
 BUILD_HOME=build
-
 # Check if SICStus Prolog exists and is executable
 if [[ -x "$PROLOG" ]]; then
   printf "SICStus Prolog found at %s\n" "$PROLOG"
@@ -72,7 +71,6 @@ $WAIT > /dev/null  # Wait for a while
 
 echo "Launching agents instances..."
 $WAIT > /dev/null  # Wait for a while
-
 # Launch agents in horizontal splits, one after the other
 for agent_filename in $BUILD_HOME/*; do
     agent_base="${agent_filename##*/}"
